@@ -85,11 +85,8 @@ db.sqlite3-journal
 media/
 static_collected/
 
-# Playwright / Testing
+# Testing
 test-results/
 playwright-report/
 .coverage
 htmlcov/
-
-# Documentation locale
-docs/
