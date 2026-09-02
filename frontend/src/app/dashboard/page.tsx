@@ -1,6 +1,7 @@
 "use client";
 
 import CopyButton from "@/components/CopyButton";
+import MikhmonLaunchModal from "@/components/MikhmonLaunchModal";
 import { api, InstanceData, RouterData } from "@/lib/api";
 import { formatFCFA } from "@/lib/utils";
 import {
@@ -32,6 +33,7 @@ export default function ClientDashboardPage() {
   const [activeFilter, setActiveFilter] = useState<"ALL" | "ACTIVE" | "EXPIRING">("ALL");
   const [pingStatus, setPingStatus] = useState<Record<string, string>>({});
   const [showScriptModal, setShowScriptModal] = useState<string | null>(null);
+  const [selectedMikhmonModal, setSelectedMikhmonModal] = useState<InstanceData | null>(null);
   const [toastMessage, setToastMessage] = useState<{ text: string; type: "success" | "error" } | null>(null);
 
   // État de confirmation de suppression
@@ -336,15 +338,15 @@ export default function ClientDashboardPage() {
                       <span>Ajouter Routeur</span>
                     </Link>
 
-                    <a
-                      href={instance.subdomain_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-md shadow-blue-600/20 transition-all transform hover:-translate-y-0.5"
+                    <button
+                      type="button"
+                      onClick={() => setSelectedMikhmonModal(instance)}
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-md shadow-blue-600/20 transition-all transform hover:-translate-y-0.5 cursor-pointer"
+                      title="Ouvrir l'assistant de connexion et l'instance Mikhmon"
                     >
                       <span>Ouvrir Mikhmon</span>
                       <ExternalLink className="w-3.5 h-3.5" />
-                    </a>
+                    </button>
 
                     <button
                       type="button"
@@ -560,6 +562,14 @@ export default function ClientDashboardPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Mikhmon Launch & Session Helper Modal */}
+      {selectedMikhmonModal && (
+        <MikhmonLaunchModal
+          instance={selectedMikhmonModal}
+          onClose={() => setSelectedMikhmonModal(null)}
+        />
       )}
 
       {/* Delete Confirmation Modal */}

@@ -111,6 +111,12 @@ class PlatformSetting(models.Model):
         decimal_places=2,
         default=Decimal("500.00"),
     )
+    mikhmon_base_domain = models.CharField(
+        "Domaine de base Mikhmon",
+        max_length=100,
+        default="mikroot.net",
+        help_text="Ex: mikroot.net (les sous-domaines seront https://espace.mikroot.net)",
+    )
     updated_at = models.DateTimeField("Dernière modification", auto_now=True)
 
     class Meta:
