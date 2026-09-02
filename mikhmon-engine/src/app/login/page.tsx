@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,12 +13,32 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Wifi } from "lucide-react";
+import { AlertCircle, ArrowRight, ShieldCheck, Wifi } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [spaceName, setSpaceName] = useState<string>("");
+
+  useEffect(() => {
+    // 1. Détecter l'espace depuis les query params ou le sous-domaine
+    const qSpace = searchParams.get("space");
+    if (qSpace) {
+      setSpaceName(qSpace);
+      document.cookie = `mikroot_space=${qSpace}; path=/; max-age=2592000; SameSite=Lax`;
+    } else if (typeof window !== "undefined") {
+      const host = window.location.hostname;
+      if (host.includes(".mikroot.net") || host.includes(".localhost")) {
+        const sub = host.split(".")[0];
+        if (sub && sub !== "www" && sub !== "localhost") {
+          setSpaceName(sub);
+          document.cookie = `mikroot_space=${sub}; path=/; max-age=2592000; SameSite=Lax`;
+        }
+      }
+    }
+  }, [searchParams]);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -32,60 +52,95 @@ export default function LoginPage() {
     const result = await signIn("credentials", {
       username,
       password,
+      space: spaceName || undefined,
       redirect: false,
     });
 
     setLoading(false);
 
     if (result?.error) {
-      setError("Username atau password salah");
+      setError("Identifiants incorrects pour cet espace.");
     } else {
-      router.push("/");
+      router.push(spaceName ? `/?space=${spaceName}` : "/");
       router.refresh();
     }
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-            <Wifi className="h-8 w-8 text-primary" />
+    <div className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-slate-950 p-4 text-slate-900 dark:text-slate-100">
+      <Card className="w-full max-w-md border-slate-200 dark:border-slate-800 shadow-xl rounded-3xl overflow-hidden bg-white dark:bg-slate-900">
+        <CardHeader className="text-center space-y-2 pt-8 pb-4">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/20">
+            <Wifi className="h-7 w-7" />
           </div>
-          <CardTitle className="text-2xl">Mikhmon Next</CardTitle>
-          <CardDescription>
-            MikroTik Hotspot Monitor - Silakan login untuk melanjutkan
+          <CardTitle className="text-2xl font-black tracking-tight">Mikroot Hotspot</CardTitle>
+          <CardDescription className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+            Gestionnaire de Hotspots MikroTik & Tickets
           </CardDescription>
+
+          {spaceName && (
+            <div className="pt-2">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 text-xs font-mono font-bold">
+                Espace : {spaceName}.mikroot.net
+              </span>
+            </div>
+          )}
         </CardHeader>
-        <CardContent>
+
+        <CardContent className="p-6 sm:p-8 pt-2">
+          {error && (
+            <div className="mb-4 p-3 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-300 text-xs font-bold flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="username">Username</Label>
+            <div className="space-y-1.5">
+              <Label htmlFor="username" className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                Nom d'utilisateur
+              </Label>
               <Input
                 id="username"
                 name="username"
                 type="text"
-                placeholder="Masukkan username"
+                placeholder="admin"
+                defaultValue="admin"
                 required
                 autoComplete="username"
+                className="h-11 rounded-xl bg-slate-50 dark:bg-slate-850 border-slate-200 dark:border-slate-700"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="password" className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                Mot de passe
+              </Label>
               <Input
                 id="password"
                 name="password"
                 type="password"
-                placeholder="Masukkan password"
+                placeholder="••••••••••••"
                 required
                 autoComplete="current-password"
+                className="h-11 rounded-xl bg-slate-50 dark:bg-slate-850 border-slate-200 dark:border-slate-700"
               />
             </div>
-            {error && <p className="text-sm text-destructive">{error}</p>}
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Memproses..." : "Login"}
+
+            <Button
+              type="submit"
+              className="w-full h-11 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md shadow-blue-600/20 cursor-pointer gap-2 mt-2"
+              disabled={loading}
+            >
+              <span>{loading ? "Connexion en cours..." : "Accéder à mon espace"}</span>
+              <ArrowRight className="w-4 h-4" />
             </Button>
           </form>
+
+          <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-center gap-1.5 text-[11px] text-slate-400">
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+            <span>Accès sécurisé et isolé par espace</span>
+          </div>
         </CardContent>
       </Card>
     </div>

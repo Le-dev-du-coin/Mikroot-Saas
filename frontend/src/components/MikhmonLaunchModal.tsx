@@ -35,7 +35,15 @@ export default function MikhmonLaunchModal({
 
   const routers = instance.routers || [];
   const adminUser = instance.admin_user || "admin";
-  const adminPass = instance.admin_password || "123";
+  const adminPass = instance.admin_password || "mikroot2026";
+
+  const isLocalDev =
+    typeof window !== "undefined" &&
+    (window.location.hostname === "localhost" ||
+      window.location.hostname === "127.0.0.1");
+  const directLaunchUrl = isLocalDev
+    ? `http://localhost:8080/?space=${instance.name}`
+    : instance.subdomain_url;
 
   const handleCopy = (text: string, key: string) => {
     navigator.clipboard.writeText(text);
@@ -114,17 +122,17 @@ export default function MikhmonLaunchModal({
                       Lien direct vers votre Mikhmon-Next
                     </span>
                     <div className="font-mono text-xs sm:text-sm font-black text-blue-950 dark:text-blue-200 mt-0.5">
-                      {instance.subdomain_url}
+                      {directLaunchUrl}
                     </div>
                   </div>
 
                   <a
-                    href={instance.subdomain_url}
+                    href={directLaunchUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-md shadow-blue-600/20 transition-all transform hover:-translate-y-0.5 cursor-pointer shrink-0"
                   >
-                    <span>Ouvrir Mikhmon-Next</span>
+                    <span>Ouvrir mon Mikhmon</span>
                     <ExternalLink className="w-3.5 h-3.5" />
                   </a>
                 </div>

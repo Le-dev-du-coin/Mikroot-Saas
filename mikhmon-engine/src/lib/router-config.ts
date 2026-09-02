@@ -1,5 +1,6 @@
 import { prisma } from "./prisma";
 import { encrypt, decrypt } from "./crypto";
+import { getActiveTenant } from "./tenant";
 import type { MikrotikRouter, RouterConfig } from "@/types";
 
 const isVercel =
@@ -60,7 +61,7 @@ function mapRouterFromDB(row: {
     host: row.host,
     port: row.port,
     username: row.username,
-    password: decryptPassword(row.password), // Decrypt when reading
+    password: decryptPassword(row.password),
     hotspotName: row.hotspotName || "",
     dnsName: row.dnsName || "",
     currency: row.currency,
@@ -73,46 +74,55 @@ function mapRouterFromDB(row: {
 function mapRouterFromFile(router: MikrotikRouter): MikrotikRouter {
   return {
     ...router,
-    password: decryptPassword(router.password), // Decrypt when reading
+    password: decryptPassword(router.password),
   };
 }
 
-async function getRoutersFromFile(): Promise<MikrotikRouter[]> {
+async function resolveTenantConfigPath(explicitTenant?: string): Promise<string> {
+  const path = await import("path");
+  const tenant = explicitTenant || (await getActiveTenant());
+  const tenantDir = path.join(process.cwd(), "data", "tenants");
+  return path.join(tenantDir, `${tenant}.json`);
+}
+
+async function getRoutersFromFile(explicitTenant?: string): Promise<MikrotikRouter[]> {
   const { promises: fs } = await import("fs");
   const path = await import("path");
-  const CONFIG_PATH = path.join(process.cwd(), "data", "routers.json");
+  const CONFIG_PATH = await resolveTenantConfigPath(explicitTenant);
 
   try {
     const dataDir = path.dirname(CONFIG_PATH);
-    try {
-      await fs.access(dataDir);
-    } catch {
-      await fs.mkdir(dataDir, { recursive: true });
-    }
+    await fs.mkdir(dataDir, { recursive: true });
 
     const data = await fs.readFile(CONFIG_PATH, "utf-8");
     const config = JSON.parse(data) as RouterConfig;
-    return config.routers.map(mapRouterFromFile);
+    return (config.routers || []).map(mapRouterFromFile);
   } catch {
-    const defaultConfig: RouterConfig = {
-      admin: { username: "admin", password: "mikroot2026" },
-      routers: [],
-    };
-    const dataDir = path.dirname(CONFIG_PATH);
+    // Si pas de fichier spécifique à l'espace, tenter le fichier global legacy ou initialiser
     try {
-      await fs.access(dataDir);
+      const legacyPath = path.join(process.cwd(), "data", "routers.json");
+      const legacyData = await fs.readFile(legacyPath, "utf-8");
+      const config = JSON.parse(legacyData) as RouterConfig;
+      return (config.routers || []).map(mapRouterFromFile);
     } catch {
-      await fs.mkdir(dataDir, { recursive: true });
+      const defaultConfig: RouterConfig = {
+        admin: { username: "admin", password: "mikroot2026" },
+        routers: [],
+      };
+      await fs.mkdir(path.dirname(CONFIG_PATH), { recursive: true });
+      await fs.writeFile(CONFIG_PATH, JSON.stringify(defaultConfig, null, 2));
+      return [];
     }
-    await fs.writeFile(CONFIG_PATH, JSON.stringify(defaultConfig, null, 2));
-    return [];
   }
 }
 
-async function saveRouterToFile(routers: MikrotikRouter[]): Promise<void> {
+async function saveRouterToFile(
+  routers: MikrotikRouter[],
+  explicitTenant?: string
+): Promise<void> {
   const { promises: fs } = await import("fs");
   const path = await import("path");
-  const CONFIG_PATH = path.join(process.cwd(), "data", "routers.json");
+  const CONFIG_PATH = await resolveTenantConfigPath(explicitTenant);
 
   // Encrypt passwords before saving
   const encryptedRouters = routers.map((r) => ({
@@ -120,35 +130,46 @@ async function saveRouterToFile(routers: MikrotikRouter[]): Promise<void> {
     password: encryptPassword(r.password),
   }));
 
+  let existingAdmin = { username: "admin", password: "mikroot2026" };
+  try {
+    const raw = await fs.readFile(CONFIG_PATH, "utf-8");
+    const parsed = JSON.parse(raw);
+    if (parsed.admin) existingAdmin = parsed.admin;
+  } catch {
+    // Ignorer
+  }
+
   const config: RouterConfig = {
-    admin: { username: "admin", password: "mikroot2026" },
+    admin: existingAdmin,
     routers: encryptedRouters,
   };
+  await fs.mkdir(path.dirname(CONFIG_PATH), { recursive: true });
   await fs.writeFile(CONFIG_PATH, JSON.stringify(config, null, 2));
 }
 
-export async function getRouters(): Promise<MikrotikRouter[]> {
+export async function getRouters(explicitTenant?: string): Promise<MikrotikRouter[]> {
   if (isVercel) {
     const rows = await prisma.router.findMany({
       orderBy: { createdAt: "desc" },
     });
     return rows.map(mapRouterFromDB);
   }
-  return getRoutersFromFile();
+  return getRoutersFromFile(explicitTenant);
 }
 
-export async function getRouter(id: string): Promise<MikrotikRouter | null> {
+export async function getRouter(id: string, explicitTenant?: string): Promise<MikrotikRouter | null> {
   if (isVercel) {
     const row = await prisma.router.findUnique({ where: { id } });
     if (!row) return null;
     return mapRouterFromDB(row);
   }
-  const routers = await getRoutersFromFile();
+  const routers = await getRoutersFromFile(explicitTenant);
   return routers.find((r) => r.id === id) || null;
 }
 
 export async function addRouter(
   router: Omit<MikrotikRouter, "id" | "createdAt" | "updatedAt">,
+  explicitTenant?: string
 ): Promise<MikrotikRouter> {
   if (isVercel) {
     const created = await prisma.router.create({
@@ -157,7 +178,7 @@ export async function addRouter(
         host: router.host,
         port: router.port,
         username: router.username,
-        password: encryptPassword(router.password), // Encrypt before saving
+        password: encryptPassword(router.password),
         hotspotName: router.hotspotName,
         dnsName: router.dnsName,
         currency: router.currency,
@@ -173,19 +194,19 @@ export async function addRouter(
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };
-  const routers = await getRoutersFromFile();
+  const routers = await getRoutersFromFile(explicitTenant);
   routers.push(newRouter);
-  await saveRouterToFile(routers);
+  await saveRouterToFile(routers, explicitTenant);
   return newRouter;
 }
 
 export async function updateRouter(
   id: string,
   updates: Partial<Omit<MikrotikRouter, "id" | "createdAt">>,
+  explicitTenant?: string
 ): Promise<MikrotikRouter | null> {
   if (isVercel) {
     try {
-      // Encrypt password if being updated
       const dataToUpdate = {
         name: updates.name,
         host: updates.host,
@@ -210,7 +231,7 @@ export async function updateRouter(
     }
   }
 
-  const routers = await getRoutersFromFile();
+  const routers = await getRoutersFromFile(explicitTenant);
   const index = routers.findIndex((r) => r.id === id);
   if (index === -1) return null;
 
@@ -219,11 +240,11 @@ export async function updateRouter(
     ...updates,
     updatedAt: new Date().toISOString(),
   };
-  await saveRouterToFile(routers);
+  await saveRouterToFile(routers, explicitTenant);
   return routers[index];
 }
 
-export async function deleteRouter(id: string): Promise<boolean> {
+export async function deleteRouter(id: string, explicitTenant?: string): Promise<boolean> {
   if (isVercel) {
     try {
       await prisma.router.delete({ where: { id } });
@@ -233,11 +254,11 @@ export async function deleteRouter(id: string): Promise<boolean> {
     }
   }
 
-  const routers = await getRoutersFromFile();
+  const routers = await getRoutersFromFile(explicitTenant);
   const index = routers.findIndex((r) => r.id === id);
   if (index === -1) return false;
 
   routers.splice(index, 1);
-  await saveRouterToFile(routers);
+  await saveRouterToFile(routers, explicitTenant);
   return true;
 }
