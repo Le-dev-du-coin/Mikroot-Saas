@@ -90,3 +90,6 @@ test-results/
 playwright-report/
 .coverage
 htmlcov/
+
+# Documentation interne
+docs/
