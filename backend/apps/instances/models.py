@@ -52,9 +52,12 @@ class MikhmonInstance(models.Model):
 
     @property
     def subdomain_url(self):
+        base_domain = getattr(settings, "BASE_DOMAIN", "mikroot.app")
         try:
             from apps.billing.models import PlatformSetting
-            base_domain = PlatformSetting.get_settings().mikhmon_base_domain or getattr(settings, "MIKHMON_BASE_DOMAIN", "mikroot.app")
+            s = PlatformSetting.get_settings()
+            if s.mikhmon_base_domain and "mikroot.net" not in s.mikhmon_base_domain:
+                base_domain = s.mikhmon_base_domain
         except Exception:
-            base_domain = getattr(settings, "MIKHMON_BASE_DOMAIN", "mikroot.app")
+            pass
         return f"https://{self.name}.{base_domain}"

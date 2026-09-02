@@ -44,7 +44,7 @@ export default function MikhmonLaunchModal({
       window.location.hostname === "127.0.0.1");
   const directLaunchUrl = isLocalDev
     ? `http://localhost:8080/?space=${instance.name}`
-    : (instance.subdomain_url || `https://${instance.name}.${BASE_DOMAIN}`);
+    : `https://${instance.name}.${BASE_DOMAIN}`;
 
   const handleCopy = (text: string, key: string) => {
     navigator.clipboard.writeText(text);
