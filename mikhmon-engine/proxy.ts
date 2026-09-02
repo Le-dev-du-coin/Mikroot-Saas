@@ -36,7 +36,7 @@ const publicApiRoutes = ["/api/auth"];
 // Security headers for all responses
 const securityHeaders = {
   "X-Content-Type-Options": "nosniff",
-  "X-Frame-Options": "DENY",
+  "X-Frame-Options": "SAMEORIGIN",
   "X-XSS-Protection": "1; mode=block",
   "Referrer-Policy": "strict-origin-when-cross-origin",
   "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
@@ -44,6 +44,31 @@ const securityHeaders = {
 
 export async function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname;
+  const url = request.nextUrl.clone();
+
+  // Détection du Tenant Space
+  let space: string | null = null;
+  const querySpace = url.searchParams.get("space");
+  if (querySpace && querySpace.trim()) {
+    space = querySpace.trim().toLowerCase();
+  }
+
+  if (!space) {
+    const host = request.headers.get("host") || "";
+    if (host.includes(".mikroot.net") || host.includes(".localhost")) {
+      const sub = host.split(".")[0];
+      if (sub && sub !== "www" && sub !== "localhost") {
+        space = sub.toLowerCase();
+      }
+    }
+  }
+
+  if (!space) {
+    const cookieSpace = request.cookies.get("mikroot_space")?.value;
+    if (cookieSpace && cookieSpace.trim()) {
+      space = cookieSpace.trim().toLowerCase();
+    }
+  }
 
   // Check if it's an API route
   const isApiRoute = path.startsWith("/api/");
@@ -69,61 +94,62 @@ export async function proxy(request: NextRequest) {
 
   const isLoggedIn = !!sessionToken;
 
+  // Helper pour injecter les headers et cookies de tenant
+  const applyTenantAndSecurity = (res: NextResponse) => {
+    Object.entries(securityHeaders).forEach(([key, value]) => {
+      res.headers.set(key, value);
+    });
+    if (space) {
+      res.headers.set("x-tenant-space", space);
+      res.cookies.set("mikroot_space", space, {
+        path: "/",
+        maxAge: 60 * 60 * 24 * 30, // 30 jours
+        sameSite: "lax",
+      });
+    }
+    return res;
+  };
+
   // Handle API routes
   if (isApiRoute) {
     // Allow public API routes
     if (isPublicApiRoute) {
-      const response = NextResponse.next();
-      Object.entries(securityHeaders).forEach(([key, value]) => {
-        response.headers.set(key, value);
-      });
-      return response;
+      return applyTenantAndSecurity(NextResponse.next());
     }
 
     // Block protected API routes if not logged in
     if (isProtectedApiRoute && !isLoggedIn) {
-      return NextResponse.json(
-        { success: false, error: "Unauthorized" },
-        {
-          status: 401,
-          headers: securityHeaders,
-        },
+      return applyTenantAndSecurity(
+        NextResponse.json(
+          { success: false, error: "Unauthorized" },
+          { status: 401 }
+        )
       );
     }
 
-    // Add security headers to API responses
-    const response = NextResponse.next();
-    Object.entries(securityHeaders).forEach(([key, value]) => {
-      response.headers.set(key, value);
-    });
-    return response;
+    return applyTenantAndSecurity(NextResponse.next());
   }
 
   // Handle page routes
   if (isProtectedRoute && !isLoggedIn) {
-    return NextResponse.redirect(new URL("/login", request.nextUrl));
+    const loginUrl = new URL("/login", request.nextUrl);
+    if (space) loginUrl.searchParams.set("space", space);
+    return applyTenantAndSecurity(NextResponse.redirect(loginUrl));
   }
 
   if (isPublicRoute && isLoggedIn) {
-    return NextResponse.redirect(new URL("/sessions", request.nextUrl));
+    const sessionsUrl = new URL("/sessions", request.nextUrl);
+    if (space) sessionsUrl.searchParams.set("space", space);
+    return applyTenantAndSecurity(NextResponse.redirect(sessionsUrl));
   }
 
-  // Add security headers to all responses
-  const response = NextResponse.next();
-  Object.entries(securityHeaders).forEach(([key, value]) => {
-    response.headers.set(key, value);
-  });
-  return response;
+  return applyTenantAndSecurity(NextResponse.next());
 }
 
 export const config = {
   matcher: [
     /*
-     * Match all request paths except:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico, sitemap.xml, robots.txt (metadata files)
-     * - public files (images, etc)
+     * Match all request paths except static files, metadata
      */
     "/((?!_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|.*\\.png$|.*\\.ico$|.*\\.svg$).*)",
   ],

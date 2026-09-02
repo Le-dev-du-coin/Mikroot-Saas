@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Mikhmon Next - MikroTik Hotspot Monitor",
-  description: "MikroTik Hotspot Monitor and Management System",
+  title: "Mikroot Hotspot - Gestionnaire MikroTik",
+  description: "Système de Gestion Hotspots MikroTik et Impression de Tickets Mikroot",
 };
 
 export default function RootLayout({

@@ -1,6 +1,6 @@
 // Application Constants
 
-export const APP_NAME = "Mikhmon Next";
+export const APP_NAME = "Mikroot Hotspot";
 export const APP_VERSION = "1.0.0";
 
 // RouterOS API default settings
