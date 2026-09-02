@@ -179,23 +179,63 @@ class RenewRouterView(APIView):
 
 
 class PingRouterView(APIView):
-    """Simule un ping de connectivité du routeur."""
+    """Exécute un véritable test de ping ICMP vers l'IP VPN du routeur MikroTik."""
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, router_id):
+        import platform
+        import re
+        import subprocess
+
         try:
-            router = Router.objects.get(id=router_id, user=request.user)
+            router = Router.objects.select_related("vpn_credential").get(id=router_id, user=request.user)
         except Router.DoesNotExist:
             return Response({"detail": "Routeur introuvable."}, status=status.HTTP_404_NOT_FOUND)
 
-        router.last_ping = timezone.now()
-        router.save(update_fields=["last_ping"])
+        vpn = getattr(router, "vpn_credential", None)
+        target_ip = vpn.assigned_ip if vpn else None
 
-        return Response({
-            "detail": f"Ping réussi pour {router.name}.",
-            "last_ping": router.last_ping,
-            "status": "ONLINE",
-        })
+        if not target_ip:
+            return Response({"detail": "Aucune IP VPN n'est allouée à ce routeur.", "status": "OFFLINE"}, status=status.HTTP_400_BAD_REQUEST)
+
+        is_win = platform.system().lower() == "windows"
+        param = "-n" if is_win else "-c"
+        timeout_flag = "-w" if is_win else "-W"
+        timeout_val = "1000" if is_win else "2"
+        cmd = ["ping", param, "1", timeout_flag, timeout_val, target_ip]
+
+        is_online = False
+        latency = "Inconnue"
+
+        try:
+            res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=3)
+            if res.returncode == 0:
+                is_online = True
+                match = re.search(r"time[=<]([\d\.]+)\s?ms", res.stdout, re.IGNORECASE)
+                if match:
+                    latency = f"{match.group(1)} ms"
+                else:
+                    latency = "< 150 ms"
+        except Exception:
+            is_online = False
+
+        if is_online:
+            router.last_ping = timezone.now()
+            router.save(update_fields=["last_ping"])
+            return Response({
+                "detail": f"Routeur '{router.name}' en ligne ! Latence: {latency}.",
+                "last_ping": router.last_ping,
+                "status": "ONLINE",
+                "latency": latency,
+            })
+        else:
+            return Response(
+                {
+                    "detail": f"Le routeur '{router.name}' ({target_ip}) ne répond pas. Vérifiez son alimentation et sa liaison WireGuard/L2TP.",
+                    "status": "OFFLINE",
+                },
+                status=status.HTTP_504_GATEWAY_TIMEOUT,
+            )
 
 
 class VpnSyncListView(APIView):

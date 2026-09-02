@@ -43,7 +43,7 @@ export default function MikhmonLaunchModal({
       window.location.hostname === "127.0.0.1");
   const directLaunchUrl = isLocalDev
     ? `http://localhost:8080/?space=${instance.name}`
-    : instance.subdomain_url;
+    : (instance.subdomain_url ? instance.subdomain_url.replace(".mikroot.net", ".mikroot.app") : `https://${instance.name}.mikroot.app`);
 
   const handleCopy = (text: string, key: string) => {
     navigator.clipboard.writeText(text);
@@ -55,15 +55,15 @@ export default function MikhmonLaunchModal({
     <div className="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-150">
       <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white overflow-hidden animate-in zoom-in-95 duration-150">
         {/* Header */}
-        <div className="p-5 sm:p-6 bg-slate-50 dark:bg-slate-850/90 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between shrink-0">
+        <div className="p-5 sm:p-6 bg-slate-100 dark:bg-slate-800/90 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center font-bold shadow-md shadow-blue-500/20">
               <Server className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="font-black text-base sm:text-lg">
-                  {instance.name}.mikroot.net
+                <h3 className="font-black text-base sm:text-lg text-slate-900 dark:text-white">
+                  {instance.name}.mikroot.app
                 </h3>
                 <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
                   ROS {instance.routeros_version}
@@ -144,9 +144,9 @@ export default function MikhmonLaunchModal({
                   1. Identifiants de connexion Mikhmon
                 </h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div className="p-3.5 bg-slate-50 dark:bg-slate-850 rounded-2xl border border-slate-200 dark:border-slate-750 flex items-center justify-between">
+                  <div className="p-3.5 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 flex items-center justify-between">
                     <div>
-                      <span className="block text-[10px] font-bold uppercase text-slate-400">
+                      <span className="block text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400">
                         Nom d'utilisateur
                       </span>
                       <span className="font-mono text-xs font-black text-slate-900 dark:text-white">
@@ -167,9 +167,9 @@ export default function MikhmonLaunchModal({
                     </button>
                   </div>
 
-                  <div className="p-3.5 bg-slate-50 dark:bg-slate-850 rounded-2xl border border-slate-200 dark:border-slate-750 flex items-center justify-between">
+                  <div className="p-3.5 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 flex items-center justify-between">
                     <div>
-                      <span className="block text-[10px] font-bold uppercase text-slate-400">
+                      <span className="block text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400">
                         Mot de passe
                       </span>
                       <span className="font-mono text-xs font-black text-slate-900 dark:text-white">
@@ -192,7 +192,7 @@ export default function MikhmonLaunchModal({
                 </div>
               </div>
 
-              {/* Router Session Pre-fill Helper */}
+              {/* Sessions Details */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
@@ -207,15 +207,15 @@ export default function MikhmonLaunchModal({
                 ) : (
                   <div className="space-y-3">
                     {routers.map((router) => {
-                      const apiPort = router.vpn?.api_port || 41009;
-                      const winboxPort = router.vpn?.winbox_port || 51009;
-                      const endpointCustom = `${instance.name}.mikroot.net:${apiPort}`;
-                      const endpointVpn = `vpn.mikroot.net:${apiPort}`;
+                      const apiPort = router.vpn?.api_port || 41001;
+                      const winboxPort = router.vpn?.winbox_port || 51001;
+                      const endpointCustom = `${instance.name}.mikroot.app:${apiPort}`;
+                      const endpointVpn = `vpn.mikroot.app:${apiPort}`;
 
                       return (
                         <div
                           key={router.id}
-                          className="p-4 bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-750 rounded-2xl space-y-3"
+                          className="p-4 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl space-y-3"
                         >
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
@@ -233,11 +233,11 @@ export default function MikhmonLaunchModal({
                             {/* Combined Host:Port Blocks */}
                             <div
                               onClick={() => handleCopy(endpointCustom, `ep-${router.id}`)}
-                              className="p-3 bg-white dark:bg-slate-900 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-blue-300 dark:hover:border-blue-700 transition-all cursor-pointer flex items-center justify-between"
+                              className="p-3 bg-white dark:bg-slate-900 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-700 transition-all cursor-pointer flex items-center justify-between"
                               title="Cliquez pour copier l'IP MikroTik avec le port"
                             >
                               <div className="min-w-0">
-                                <span className="block text-[9px] font-sans text-slate-400 uppercase font-bold">
+                                <span className="block text-[9px] font-sans text-slate-500 dark:text-slate-400 uppercase font-bold">
                                   IP MikroTik & Port (Host:Port)
                                 </span>
                                 <span className="font-bold text-blue-600 dark:text-blue-400 truncate block">

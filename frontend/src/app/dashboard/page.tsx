@@ -73,12 +73,14 @@ export default function ClientDashboardPage() {
   const handlePing = async (routerId: string) => {
     setPingStatus((prev) => ({ ...prev, [routerId]: "testing" }));
     try {
-      await api.pingRouter(routerId);
+      const res = await api.pingRouter(routerId);
       setPingStatus((prev) => ({ ...prev, [routerId]: "online" }));
-    } catch {
-      setPingStatus((prev) => ({ ...prev, [routerId]: "online" }));
+      showToast(res.detail || "Routeur en ligne !", "success");
+    } catch (err: any) {
+      setPingStatus((prev) => ({ ...prev, [routerId]: "offline" }));
+      showToast(err.message || "Le routeur ne répond pas au ping.", "error");
     } finally {
-      setTimeout(() => setPingStatus((prev) => ({ ...prev, [routerId]: "" })), 3000);
+      setTimeout(() => setPingStatus((prev) => ({ ...prev, [routerId]: "" })), 4000);
     }
   };
 
@@ -301,27 +303,27 @@ export default function ClientDashboardPage() {
                 className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-3xl shadow-xs overflow-hidden hover:border-slate-300 dark:hover:border-slate-700 transition-all"
               >
                 {/* Space Header */}
-                <div className="p-5 sm:p-6 bg-slate-50/90 dark:bg-slate-850/80 border-b border-slate-200/80 dark:border-slate-800 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                <div className="p-5 sm:p-6 bg-slate-100 dark:bg-slate-800/90 border-b border-slate-200 dark:border-slate-700 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                   <div className="flex items-start sm:items-center gap-3.5">
                     <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center font-bold shadow-md shadow-blue-500/20 shrink-0">
                       <Server className="w-6 h-6" />
                     </div>
                     <div>
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-black text-base sm:text-lg text-slate-950 dark:text-white">
-                          {instance.name}.mikroot.net
+                        <span className="font-black text-base sm:text-lg text-slate-900 dark:text-white">
+                          {instance.name}.mikroot.app
                         </span>
-                        <span className="px-2.5 py-0.5 text-[11px] font-bold rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                        <span className="px-2.5 py-0.5 text-[11px] font-bold rounded-full bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700">
                           ROS {instance.routeros_version}
                         </span>
                       </div>
 
                       <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs">
-                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-mono text-[11px]">
+                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-mono text-[11px]">
                           <KeyRound className="w-3.5 h-3.5 text-amber-500 shrink-0" />
                           <span>Identifiants : <strong>admin</strong> / <strong>{instance.admin_password || "123"}</strong></span>
                         </div>
-                        <span className="text-slate-400 dark:text-slate-500 text-[11px]">
+                        <span className="text-slate-500 dark:text-slate-400 text-[11px]">
                           {routers.length} routeur(s) lié(s)
                         </span>
                       </div>
@@ -387,16 +389,16 @@ export default function ClientDashboardPage() {
                         const daysLeft = router.days_left ?? 30;
                         const isExpiringSoon = daysLeft <= 7;
 
-                        const vpnServer = router.vpn?.vpn_server || "vpn.mikroot.net";
-                        const apiPort = router.vpn?.api_port || 41009;
-                        const winboxPort = router.vpn?.winbox_port || 51009;
+                        const vpnServer = router.vpn?.vpn_server || "vpn.mikroot.app";
+                        const apiPort = router.vpn?.api_port || 41001;
+                        const winboxPort = router.vpn?.winbox_port || 51001;
                         const apiEndpoint = `${vpnServer}:${apiPort}`;
                         const winboxEndpoint = `${vpnServer}:${winboxPort}`;
 
                         return (
                           <div
                             key={router.id}
-                            className="p-5 rounded-3xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900/95 hover:border-blue-500/50 dark:hover:border-blue-500/50 transition-all space-y-4 shadow-2xs"
+                            className="p-5 rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-blue-500/50 dark:hover:border-blue-500/50 transition-all space-y-4 shadow-2xs"
                           >
                             {/* Router Header */}
                             <div className="flex items-center justify-between">
@@ -406,8 +408,8 @@ export default function ClientDashboardPage() {
                                   <h4 className="font-black text-slate-900 dark:text-white text-sm sm:text-base">
                                     {router.name}
                                   </h4>
-                                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                                    Tunnel L2TP chiffré
+                                  <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+                                    Tunnel WireGuard / L2TP sécurisé
                                   </p>
                                 </div>
                               </div>
@@ -427,7 +429,7 @@ export default function ClientDashboardPage() {
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                               <div
                                 onClick={() => copyToClipboard(apiEndpoint, "Port API & Domaine")}
-                                className="group p-3 rounded-2xl bg-slate-50 dark:bg-slate-850 hover:bg-blue-50 dark:hover:bg-blue-950/40 border border-slate-200 dark:border-slate-750 hover:border-blue-300 dark:hover:border-blue-700 transition-all cursor-pointer flex items-center justify-between"
+                                className="group p-3 rounded-2xl bg-slate-50 dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-blue-950/40 border border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-600 transition-all cursor-pointer flex items-center justify-between"
                                 title="Cliquez pour copier l'adresse API complète"
                               >
                                 <div className="min-w-0">
@@ -443,7 +445,7 @@ export default function ClientDashboardPage() {
 
                               <div
                                 onClick={() => copyToClipboard(winboxEndpoint, "Port Winbox & Domaine")}
-                                className="group p-3 rounded-2xl bg-slate-50 dark:bg-slate-850 hover:bg-blue-50 dark:hover:bg-blue-950/40 border border-slate-200 dark:border-slate-750 hover:border-blue-300 dark:hover:border-blue-700 transition-all cursor-pointer flex items-center justify-between"
+                                className="group p-3 rounded-2xl bg-slate-50 dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-blue-950/40 border border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-600 transition-all cursor-pointer flex items-center justify-between"
                                 title="Cliquez pour copier l'adresse Winbox complète"
                               >
                                 <div className="min-w-0">
