@@ -1,9 +1,12 @@
 """Mikroot Core URL Configuration."""
+from django.conf import settings
 from django.contrib import admin
 from django.urls import include, path, re_path
 
+admin_path = f"{settings.DJANGO_ADMIN_URL.strip('/')}/"
+
 urlpatterns = [
-    path("admin/", admin.site.urls),
+    path(admin_path, admin.site.urls),
     re_path(r"^api/accounts/?", include("apps.accounts.urls")),
     re_path(r"^api/billing/?", include("apps.billing.urls")),
     re_path(r"^api/instances/?", include("apps.instances.urls")),

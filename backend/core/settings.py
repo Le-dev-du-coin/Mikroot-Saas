@@ -17,6 +17,8 @@ SECRET_KEY = config(
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config("DEBUG", default=True, cast=bool)
 
+DJANGO_ADMIN_URL = config("DJANGO_ADMIN_URL", default="super-manager-panel-2026")
+
 ALLOWED_HOSTS = ["*"]
 APPEND_SLASH = False
 
