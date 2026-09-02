@@ -52,7 +52,7 @@ export default function SessionSettingsPage() {
           }
         }
       } catch {
-        toast.error("Gagal memuat data router");
+        toast.error("Impossible de charger les données du routeur");
       } finally {
         setLoading(false);
       }
@@ -74,12 +74,12 @@ export default function SessionSettingsPage() {
       const result = await res.json();
 
       if (result.success) {
-        toast.success("Settings berhasil disimpan");
+        toast.success("Paramètres enregistrés avec succès");
       } else {
-        toast.error(result.error || "Gagal menyimpan settings");
+        toast.error(result.error || "Échec de l'enregistrement des paramètres");
       }
     } catch {
-      toast.error("Gagal menyimpan settings");
+      toast.error("Échec de l'enregistrement des paramètres");
     } finally {
       setSaving(false);
     }
@@ -95,14 +95,14 @@ export default function SessionSettingsPage() {
       const result = await res.json();
 
       if (result.success) {
-        toast.success(`Ping OK - ${result.host}:${result.port}`);
+        toast.success(`Ping réussi - ${result.host}:${result.port}`);
       } else {
         toast.error(
-          `Ping Failed - ${result.host}:${result.port} - ${result.error}`,
+          `Échec du Ping - ${result.host}:${result.port} - ${result.error}`,
         );
       }
     } catch {
-      toast.error("Ping test failed");
+      toast.error("Échec du test de ping");
     } finally {
       setTesting(false);
     }

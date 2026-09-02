@@ -66,14 +66,9 @@ class MikhmonProvisioningService:
 
     @classmethod
     def provision_router(cls, router) -> None:
-        """Injecte le routeur uniquement dans le fichier de son espace dédié."""
+        """Initialise ou met à jour les accès administrateur de l'espace sans pré-remplir les routeurs."""
         try:
             instance = router.mikhmon_instance
-            vpn = getattr(router, "vpn_credential", None) or getattr(router, "vpn", None)
-
-            if not vpn:
-                return
-
             config = cls.load_instance_config(instance)
 
             # Mise à jour des identifiants admin de l'espace
@@ -84,35 +79,14 @@ class MikhmonProvisioningService:
                 "password": admin_pass,
             }
 
-            base_domain = getattr(settings, "BASE_DOMAIN", "mikroot.app")
-            router_entry = {
-                "id": str(router.id),
-                "name": router.name,
-                "host": vpn.assigned_ip if vpn.assigned_ip else f"{instance.name}.{base_domain}",
-                "port": 8728 if vpn.assigned_ip else vpn.api_port,
-                "username": admin_user,
-                "password": admin_pass,
-                "hotspotName": f"Hotspot {router.name}",
-                "dnsName": f"{instance.name}.{base_domain}",
-                "currency": "FCFA",
-                "autoReload": 10,
-                "createdAt": router.created_at.isoformat(),
-                "updatedAt": router.updated_at.isoformat(),
-            }
+            # On conserve les routeurs configurés manuellement par le client dans Mikhmon
+            if "routers" not in config:
+                config["routers"] = []
 
-            routers_list = config.get("routers", [])
-            index = next((i for i, r in enumerate(routers_list) if str(r.get("id")) == str(router.id) or r.get("name") == router.name), -1)
-
-            if index >= 0:
-                routers_list[index] = router_entry
-            else:
-                routers_list.append(router_entry)
-
-            config["routers"] = routers_list
             cls.save_instance_config(instance.name, config)
 
         except Exception as e:
-            logger.error(f"Erreur de provisionnement pour {router.name}: {e}")
+            logger.error(f"Erreur d'initialisation de l'espace pour {router.name}: {e}")
 
     @classmethod
     def deprovision_router(cls, router_id: str) -> None:
@@ -147,40 +121,18 @@ class MikhmonProvisioningService:
         instances = MikhmonInstance.objects.filter(is_active=True)
 
         for instance in instances:
-            routers = Router.objects.select_related("vpn_credential").filter(
-                mikhmon_instance=instance, status=Router.Status.ACTIVE
-            )
             admin_user = instance.admin_user or "admin"
             admin_pass = instance.admin_password or "mikroot2026"
 
-            base_domain = getattr(settings, "BASE_DOMAIN", "mikroot.app")
-            routers_list = []
-            for r in routers:
-                vpn = getattr(r, "vpn_credential", None)
-                if vpn:
-                    routers_list.append({
-                        "id": str(r.id),
-                        "name": r.name,
-                        "host": vpn.assigned_ip if vpn.assigned_ip else f"{instance.name}.{base_domain}",
-                        "port": 8728 if vpn.assigned_ip else vpn.api_port,
-                        "username": admin_user,
-                        "password": admin_pass,
-                        "hotspotName": f"Hotspot {r.name}",
-                        "dnsName": f"{instance.name}.{base_domain}",
-                        "currency": "FCFA",
-                        "autoReload": 10,
-                        "createdAt": r.created_at.isoformat(),
-                        "updatedAt": r.updated_at.isoformat(),
-                    })
-                    count += 1
-
-            config = {
-                "admin": {
-                    "username": admin_user,
-                    "password": admin_pass,
-                },
-                "routers": routers_list,
+            config = cls.load_instance_config(instance)
+            config["admin"] = {
+                "username": admin_user,
+                "password": admin_pass,
             }
+            if "routers" not in config:
+                config["routers"] = []
+
             cls.save_instance_config(instance.name, config)
+            count += 1
 
         return count

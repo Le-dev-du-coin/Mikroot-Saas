@@ -65,7 +65,7 @@ export async function POST(
       return NextResponse.json(
         {
           success: false,
-          error: `Gagal konek ke MikroTik ${router.host}:${router.port}. Cek IP, user, password dan pastikan port API (${router.port}) aktif.`,
+          error: `Impossible de se connecter au MikroTik ${router.host}:${router.port}. Vérifiez l'adresse IP, les identifiants et assurez-vous que le service API (port ${router.port}) est activé.`,
         },
         { status: 400, headers: rateLimit.headers },
       );
@@ -92,7 +92,7 @@ export async function POST(
   } catch (error) {
     console.error("Failed to connect:", error);
     return NextResponse.json(
-      { success: false, error: "Gagal konek ke router" },
+      { success: false, error: "Impossible de se connecter au routeur" },
       { status: 500 },
     );
   }

@@ -53,13 +53,13 @@
        const result = await res.json();
  
        if (result.success) {
-         toast.success("Router berhasil ditambahkan");
+         toast.success("Routeur ajouté avec succès");
          router.push("/sessions");
        } else {
-         toast.error(result.error || "Gagal menambahkan router");
+         toast.error(result.error || "Échec de l'ajout du routeur");
        }
      } catch {
-       toast.error("Gagal menambahkan router");
+       toast.error("Échec de l'ajout du routeur");
      } finally {
        setSaving(false);
      }
@@ -67,7 +67,7 @@
  
    async function handleTest() {
      if (!formData.host) {
-       toast.error("IP MikroTik wajib diisi");
+       toast.error("L'adresse IP MikroTik est requise");
        return;
      }
  
@@ -85,12 +85,12 @@
        const result = await res.json();
  
        if (result.success) {
-         toast.success(`Ping OK - ${host}:${port}`);
+         toast.success(`Ping réussi - ${host}:${port}`);
        } else {
-         toast.error(`Ping Failed - ${host}:${port} - ${result.error}`);
+         toast.error(`Échec du Ping - ${host}:${port} - ${result.error}`);
        }
      } catch {
-       toast.error("Ping test failed");
+       toast.error("Échec du test de ping");
      } finally {
        setTesting(false);
      }

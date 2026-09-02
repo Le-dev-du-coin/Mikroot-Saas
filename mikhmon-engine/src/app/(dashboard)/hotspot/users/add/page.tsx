@@ -119,13 +119,13 @@ export default function AddUserPage() {
       const data = await res.json();
 
       if (data.success) {
-        toast.success("User berhasil ditambahkan");
+        toast.success("Utilisateur créé avec succès");
         router.push("/hotspot/users");
       } else {
-        toast.error(data.error || "Gagal menambahkan user");
+        toast.error(data.error || "Échec de la création de l'utilisateur");
       }
     } catch {
-      toast.error("Gagal menambahkan user");
+      toast.error("Échec de la création de l'utilisateur");
     } finally {
       setSaving(false);
     }

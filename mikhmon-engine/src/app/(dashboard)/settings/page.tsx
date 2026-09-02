@@ -63,11 +63,11 @@ function SettingsContent() {
             autoReload: data.data.autoReload || 10,
           });
         } else {
-          toast.error("Router tidak ditemukan");
+          toast.error("Routeur introuvable");
           router.push("/sessions");
         }
       } catch {
-        toast.error("Gagal memuat data router");
+        toast.error("Impossible de charger les données du routeur");
       } finally {
         setLoading(false);
       }
@@ -88,33 +88,33 @@ function SettingsContent() {
       const data = await res.json();
 
       if (data.success) {
-        toast.success("Router berhasil diupdate");
+        toast.success("Routeur mis à jour avec succès");
         router.push("/sessions");
       } else {
-        toast.error(data.error || "Gagal menyimpan");
+        toast.error(data.error || "Échec de l'enregistrement");
       }
     } catch {
-      toast.error("Gagal menyimpan data router");
+      toast.error("Échec de l'enregistrement des données du routeur");
     } finally {
       setSaving(false);
     }
   }
 
   async function handleDelete() {
-    if (!routerId || !confirm("Hapus router ini?")) return;
+    if (!routerId || !confirm("Supprimer ce routeur ?")) return;
 
     try {
       const res = await fetch(`/api/routers/${routerId}`, { method: "DELETE" });
       const data = await res.json();
 
       if (data.success) {
-        toast.success("Router berhasil dihapus");
+        toast.success("Routeur supprimé avec succès");
         router.push("/sessions");
       } else {
-        toast.error(data.error || "Gagal menghapus");
+        toast.error(data.error || "Échec de la suppression");
       }
     } catch {
-      toast.error("Gagal menghapus router");
+      toast.error("Échec de la suppression du routeur");
     }
   }
 
@@ -332,7 +332,7 @@ function SettingsContent() {
       <div className="flex justify-between">
         <Button variant="destructive" onClick={handleDelete}>
           <Trash2 className="mr-2 h-4 w-4" />
-          Hapus Router
+          Supprimer le Routeur
         </Button>
         <Button onClick={handleSave} disabled={saving}>
           {saving ? (
@@ -340,7 +340,7 @@ function SettingsContent() {
           ) : (
             <Save className="mr-2 h-4 w-4" />
           )}
-          Simpan
+          Enregistrer
         </Button>
       </div>
     </div>

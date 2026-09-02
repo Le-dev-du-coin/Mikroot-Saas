@@ -182,17 +182,17 @@ export default function GenerateUsersPage() {
       }
 
       if (successCount > 0) {
-        toast.success(`${successCount} user berhasil dibuat`);
+        toast.success(`${successCount} ticket(s) généré(s) avec succès`);
       }
       if (failCount > 0) {
-        toast.error(`${failCount} user gagal dibuat`);
+        toast.error(`${failCount} ticket(s) en échec`);
       }
 
       if (successCount > 0) {
         router.push("/hotspot/users");
       }
     } catch {
-      toast.error("Gagal generate users");
+      toast.error("Échec de la génération des tickets");
     } finally {
       setGenerating(false);
     }

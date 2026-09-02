@@ -55,11 +55,11 @@ export default function EditRouterPage({
         if (result.success) {
           setFormData(result.data);
         } else {
-          toast.error("Router tidak ditemukan");
+          toast.error("Routeur introuvable");
           router.push("/sessions");
         }
       } catch {
-        toast.error("Gagal memuat data router");
+        toast.error("Impossible de charger les données du routeur");
       } finally {
         setLoading(false);
       }
@@ -90,12 +90,12 @@ export default function EditRouterPage({
       const result = await res.json();
 
       if (result.success) {
-        toast.success("Router berhasil diupdate");
+        toast.success("Routeur mis à jour avec succès");
       } else {
-        toast.error(result.error || "Gagal mengupdate router");
+        toast.error(result.error || "Échec de la mise à jour du routeur");
       }
     } catch {
-      toast.error("Gagal mengupdate router");
+      toast.error("Échec de la mise à jour du routeur");
     } finally {
       setSaving(false);
     }
@@ -108,14 +108,14 @@ export default function EditRouterPage({
       const result = await res.json();
 
       if (result.success) {
-        toast.success(`Ping OK - ${result.host}:${result.port}`);
+        toast.success(`Ping réussi - ${result.host}:${result.port}`);
       } else {
         toast.error(
-          `Ping Failed - ${result.host}:${result.port} - ${result.error}`,
+          `Échec du Ping - ${result.host}:${result.port} - ${result.error}`,
         );
       }
     } catch {
-      toast.error("Ping test failed");
+      toast.error("Échec du test de ping");
     } finally {
       setTesting(false);
     }
@@ -128,20 +128,20 @@ export default function EditRouterPage({
       const result = await res.json();
 
       if (result.success) {
-        toast.success("Terhubung ke router");
+        toast.success("Connecté au routeur avec succès");
         router.push(`/?session=${id}`);
       } else {
-        toast.error(result.error || "Gagal terhubung ke router");
+        toast.error(result.error || "Échec de la connexion au routeur");
       }
     } catch {
-      toast.error("Gagal terhubung ke router");
+      toast.error("Échec de la connexion au routeur");
     } finally {
       setConnecting(false);
     }
   }
 
   async function handleDelete() {
-    if (!confirm("Yakin ingin menghapus router ini?")) return;
+    if (!confirm("Êtes-vous sûr de vouloir supprimer ce routeur ?")) return;
 
     setDeleting(true);
     try {
@@ -149,13 +149,13 @@ export default function EditRouterPage({
       const result = await res.json();
 
       if (result.success) {
-        toast.success("Router berhasil dihapus");
+        toast.success("Routeur supprimé avec succès");
         router.push("/sessions");
       } else {
-        toast.error(result.error || "Gagal menghapus router");
+        toast.error(result.error || "Échec de la suppression du routeur");
       }
     } catch {
-      toast.error("Gagal menghapus router");
+      toast.error("Échec de la suppression du routeur");
     } finally {
       setDeleting(false);
     }
