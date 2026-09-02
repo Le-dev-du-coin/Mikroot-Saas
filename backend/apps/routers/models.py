@@ -178,28 +178,18 @@ class VpnCredential(models.Model):
             )
             server_port = getattr(settings, "VPN_WG_SERVER_PORT", 51820)
             return (
-                f"# =============================================================\n"
-                f"# SCRIPT TUNNEL MIKROOT VPN (ROUTEROS 7 - WIREGUARD)\n"
-                f"# ROUTEUR : {self.router.name} | ESPACE : {instance.name}.mikroot.net\n"
-                f"# IP VPN CLIENT : {self.assigned_ip} | PORT API : {self.api_port}\n"
-                f"# =============================================================\n\n"
-                f"/interface wireguard add name=wg-mikroot listen-port={self.wireguard_listen_port} mtu=1420 private-key=\"{self.wireguard_private_key}\" comment=\"Tunnel Mikroot SaaS\"\n"
+                f"/interface wireguard add name=wg-mikroot listen-port={self.wireguard_listen_port} mtu=1420 private-key=\"{self.wireguard_private_key}\" comment=\"Mikroot VPN\"\n"
                 f"/ip address add address={self.assigned_ip}/24 interface=wg-mikroot\n"
-                f"/interface wireguard peers add interface=wg-mikroot endpoint-address={self.vpn_server} endpoint-port={server_port} public-key=\"{server_pubkey}\" allowed-address=10.8.0.0/24 persistent-keepalive=25s comment=\"Mikroot Server VPN\"\n"
+                f"/interface wireguard peers add interface=wg-mikroot endpoint-address={self.vpn_server} endpoint-port={server_port} public-key=\"{server_pubkey}\" allowed-address=10.8.0.0/24 persistent-keepalive=25s comment=\"Mikroot VPN Server\"\n"
                 f"/ip service set api disabled=no port=8728\n"
                 f"/ip service set winbox disabled=no port=8291\n"
-                f"/ip firewall filter add action=accept chain=input in-interface=wg-mikroot comment=\"Autoriser Mikroot VPN\" place-before=0"
+                f"/ip firewall filter add action=accept chain=input in-interface=wg-mikroot comment=\"Mikroot VPN API\" place-before=0"
             )
         else:
             # === SCRIPT ROUTEROS 6 (L2TP / IPSEC) ===
             return (
-                f"# =============================================================\n"
-                f"# SCRIPT TUNNEL MIKROOT VPN (ROUTEROS 6 - L2TP / IPSEC)\n"
-                f"# ROUTEUR : {self.router.name} | ESPACE : {instance.name}.mikroot.net\n"
-                f"# IP VPN CLIENT : {self.assigned_ip} | PORT API : {self.api_port}\n"
-                f"# =============================================================\n\n"
-                f"/interface l2tp-client add connect-to={self.vpn_server} name=mikroot-vpn user=\"{self.vpn_user}\" password=\"{self.vpn_password}\" disabled=no add-default-route=no use-ipsec=yes ipsec-secret=\"{self.vpn_password}\" comment=\"Tunnel Mikroot SaaS\"\n"
+                f"/interface l2tp-client add connect-to={self.vpn_server} name=mikroot-vpn user=\"{self.vpn_user}\" password=\"{self.vpn_password}\" disabled=no add-default-route=no use-ipsec=yes ipsec-secret=\"{self.vpn_password}\" comment=\"Mikroot VPN\"\n"
                 f"/ip service set api disabled=no port=8728\n"
                 f"/ip service set winbox disabled=no port=8291\n"
-                f"/ip firewall filter add action=accept chain=input in-interface=mikroot-vpn comment=\"Autoriser Mikroot VPN\" place-before=0"
+                f"/ip firewall filter add action=accept chain=input in-interface=mikroot-vpn comment=\"Mikroot VPN API\" place-before=0"
             )
