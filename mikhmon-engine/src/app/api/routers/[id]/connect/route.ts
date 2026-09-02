@@ -39,7 +39,7 @@ export async function POST(
       );
     }
 
-    const router = await getRouter(id);
+    const router = await getRouter(id, request);
     if (!router) {
       return NextResponse.json(
         { success: false, error: "Router not found" },

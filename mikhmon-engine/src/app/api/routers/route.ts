@@ -26,7 +26,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const routers = await getRouters();
+    const routers = await getRouters(request);
 
     // Don't expose passwords in list response
     const sanitizedRouters = routers.map((r) => ({

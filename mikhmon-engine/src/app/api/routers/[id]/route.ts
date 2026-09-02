@@ -30,7 +30,7 @@ export async function GET(
 
   try {
     const { id } = await params;
-    const router = await getRouter(id);
+    const router = await getRouter(id, request);
     if (!router) {
       return NextResponse.json(
         { success: false, error: "Router not found" },
@@ -77,13 +77,15 @@ export async function PUT(
     const body = await request.json();
 
     // Parse host:port if provided in host field
+    const processedBody = { ...body };
     if (body.host && body.host.includes(":")) {
       const parts = body.host.split(":");
-      body.host = parts[0];
-      body.port = parseInt(parts[1]) || body.port || 8728;
+      processedBody.host = parts[0];
+      processedBody.port = parseInt(parts[1]) || 8728;
     }
 
-    const validation = validateInput(routerUpdateSchema, body);
+    // Validate input
+    const validation = validateInput(routerUpdateSchema, processedBody);
     if (!validation.success) {
       return NextResponse.json(
         { success: false, error: validation.error },
@@ -91,15 +93,28 @@ export async function PUT(
       );
     }
 
-    const router = await updateRouter(id, validation.data);
-    if (!router) {
+    const validatedData = validation.data;
+
+    // Check if router exists
+    const existing = await getRouter(id, request);
+    if (!existing) {
       return NextResponse.json(
         { success: false, error: "Router not found" },
         { status: 404, headers: rateLimit.headers },
       );
     }
-    // Remove password from response
+
+    const router = await updateRouter(id, validatedData, request);
+    if (!router) {
+      return NextResponse.json(
+        { success: false, error: "Failed to update router" },
+        { status: 500, headers: rateLimit.headers },
+      );
+    }
+
+    // Don't expose password in response
     const sanitizedRouter = { ...router, password: undefined };
+
     return NextResponse.json(
       { success: true, data: sanitizedRouter },
       { headers: rateLimit.headers },
@@ -135,8 +150,8 @@ export async function DELETE(
 
   try {
     const { id } = await params;
-    const deleted = await deleteRouter(id);
-    if (!deleted) {
+    const success = await deleteRouter(id, request);
+    if (!success) {
       return NextResponse.json(
         { success: false, error: "Router not found" },
         { status: 404, headers: rateLimit.headers },
