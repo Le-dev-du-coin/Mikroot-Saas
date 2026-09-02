@@ -21,22 +21,24 @@ export async function getActiveTenant(req?: Request): Promise<string> {
         const refUrl = new URL(referer);
         const refSpace = refUrl.searchParams.get("space");
         if (refSpace && refSpace.trim()) return refSpace.trim().toLowerCase();
-        if (refUrl.hostname.includes(".mikroot.net") || refUrl.hostname.includes(".localhost")) {
-          const sub = refUrl.hostname.split(".")[0];
-          if (sub && sub !== "www" && sub !== "localhost") return sub.toLowerCase();
+        const refParts = refUrl.hostname.split(".");
+        if (refParts.length >= 3 || (refParts.length === 2 && refParts[1] === "localhost")) {
+          const sub = refParts[0].toLowerCase();
+          if (!["www", "localhost", "app", "api", "vpn", "admin"].includes(sub)) return sub;
         }
       }
 
       // Vérifier l'en-tête Host
-      const host = req.headers.get("host") || "";
-      if (host.includes(".mikroot.net") || host.includes(".localhost")) {
-        const sub = host.split(".")[0];
-        if (sub && sub !== "www" && sub !== "localhost") return sub.toLowerCase();
+      const host = (req.headers.get("host") || "").split(":")[0];
+      const hostParts = host.split(".");
+      if (hostParts.length >= 3 || (hostParts.length === 2 && hostParts[1] === "localhost")) {
+        const sub = hostParts[0].toLowerCase();
+        if (!["www", "localhost", "app", "api", "vpn", "admin"].includes(sub)) return sub;
       }
     } catch {}
   }
 
-  // 2. Header 'x-tenant-space' injecté par le middleware
+  // 2. Header 'x-tenant-space' injecté par le middleware / Nginx
   try {
     const headersList = await headers();
     const xSpace = headersList.get("x-tenant-space");
@@ -48,12 +50,18 @@ export async function getActiveTenant(req?: Request): Promise<string> {
       const refUrl = new URL(referer);
       const refSpace = refUrl.searchParams.get("space");
       if (refSpace && refSpace.trim()) return refSpace.trim().toLowerCase();
+      const refParts = refUrl.hostname.split(".");
+      if (refParts.length >= 3 || (refParts.length === 2 && refParts[1] === "localhost")) {
+        const sub = refParts[0].toLowerCase();
+        if (!["www", "localhost", "app", "api", "vpn", "admin"].includes(sub)) return sub;
+      }
     }
-    const host = headersList.get("host") || "";
-    if (host.includes(".mikroot.net") || host.includes(".localhost")) {
-      const sub = host.split(".")[0];
-      if (sub && sub !== "www" && sub !== "localhost") {
-        return sub.toLowerCase();
+    const host = (headersList.get("host") || "").split(":")[0];
+    const hostParts = host.split(".");
+    if (hostParts.length >= 3 || (hostParts.length === 2 && hostParts[1] === "localhost")) {
+      const sub = hostParts[0].toLowerCase();
+      if (!["www", "localhost", "app", "api", "vpn", "admin"].includes(sub)) {
+        return sub;
       }
     }
   } catch {}

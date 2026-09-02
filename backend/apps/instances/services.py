@@ -84,15 +84,16 @@ class MikhmonProvisioningService:
                 "password": admin_pass,
             }
 
+            base_domain = getattr(settings, "BASE_DOMAIN", "mikroot.app")
             router_entry = {
                 "id": str(router.id),
                 "name": router.name,
-                "host": vpn.assigned_ip if vpn.assigned_ip else f"{instance.name}.mikroot.app",
+                "host": vpn.assigned_ip if vpn.assigned_ip else f"{instance.name}.{base_domain}",
                 "port": 8728 if vpn.assigned_ip else vpn.api_port,
                 "username": admin_user,
                 "password": admin_pass,
                 "hotspotName": f"Hotspot {router.name}",
-                "dnsName": f"{instance.name}.mikroot.app",
+                "dnsName": f"{instance.name}.{base_domain}",
                 "currency": "FCFA",
                 "autoReload": 10,
                 "createdAt": router.created_at.isoformat(),
@@ -152,6 +153,7 @@ class MikhmonProvisioningService:
             admin_user = instance.admin_user or "admin"
             admin_pass = instance.admin_password or "mikroot2026"
 
+            base_domain = getattr(settings, "BASE_DOMAIN", "mikroot.app")
             routers_list = []
             for r in routers:
                 vpn = getattr(r, "vpn_credential", None)
@@ -159,12 +161,12 @@ class MikhmonProvisioningService:
                     routers_list.append({
                         "id": str(r.id),
                         "name": r.name,
-                        "host": f"{instance.name}.mikroot.net",
-                        "port": vpn.api_port,
+                        "host": vpn.assigned_ip if vpn.assigned_ip else f"{instance.name}.{base_domain}",
+                        "port": 8728 if vpn.assigned_ip else vpn.api_port,
                         "username": admin_user,
                         "password": admin_pass,
                         "hotspotName": f"Hotspot {r.name}",
-                        "dnsName": f"{instance.name}.mikroot.net",
+                        "dnsName": f"{instance.name}.{base_domain}",
                         "currency": "FCFA",
                         "autoReload": 10,
                         "createdAt": r.created_at.isoformat(),

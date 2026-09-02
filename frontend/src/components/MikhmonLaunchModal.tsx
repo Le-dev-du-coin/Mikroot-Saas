@@ -2,6 +2,7 @@
 
 import CopyButton from "@/components/CopyButton";
 import { InstanceData, RouterData } from "@/lib/api";
+import { BASE_DOMAIN } from "@/lib/config";
 import {
   CheckCircle2,
   Copy,
@@ -43,7 +44,7 @@ export default function MikhmonLaunchModal({
       window.location.hostname === "127.0.0.1");
   const directLaunchUrl = isLocalDev
     ? `http://localhost:8080/?space=${instance.name}`
-    : (instance.subdomain_url ? instance.subdomain_url.replace(".mikroot.net", ".mikroot.app") : `https://${instance.name}.mikroot.app`);
+    : (instance.subdomain_url || `https://${instance.name}.${BASE_DOMAIN}`);
 
   const handleCopy = (text: string, key: string) => {
     navigator.clipboard.writeText(text);
@@ -63,7 +64,7 @@ export default function MikhmonLaunchModal({
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="font-black text-base sm:text-lg text-slate-900 dark:text-white">
-                  {instance.name}.mikroot.app
+                  {instance.name}.{BASE_DOMAIN}
                 </h3>
                 <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
                   ROS {instance.routeros_version}
@@ -209,8 +210,8 @@ export default function MikhmonLaunchModal({
                     {routers.map((router) => {
                       const apiPort = router.vpn?.api_port || 41001;
                       const winboxPort = router.vpn?.winbox_port || 51001;
-                      const endpointCustom = `${instance.name}.mikroot.app:${apiPort}`;
-                      const endpointVpn = `vpn.mikroot.app:${apiPort}`;
+                      const endpointCustom = `${instance.name}.${BASE_DOMAIN}:${apiPort}`;
+                      const endpointVpn = `vpn.${BASE_DOMAIN}:${apiPort}`;
 
                       return (
                         <div

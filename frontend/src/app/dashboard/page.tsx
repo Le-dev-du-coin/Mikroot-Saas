@@ -3,6 +3,7 @@
 import CopyButton from "@/components/CopyButton";
 import MikhmonLaunchModal from "@/components/MikhmonLaunchModal";
 import { api, InstanceData, RouterData } from "@/lib/api";
+import { BASE_DOMAIN } from "@/lib/config";
 import { formatFCFA } from "@/lib/utils";
 import {
   Activity,
@@ -311,7 +312,7 @@ export default function ClientDashboardPage() {
                     <div>
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="font-black text-base sm:text-lg text-slate-900 dark:text-white">
-                          {instance.name}.mikroot.app
+                          {instance.name}.{BASE_DOMAIN}
                         </span>
                         <span className="px-2.5 py-0.5 text-[11px] font-bold rounded-full bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700">
                           ROS {instance.routeros_version}

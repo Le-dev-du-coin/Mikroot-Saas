@@ -14,12 +14,17 @@ SECRET_KEY = config(
     default="django-insecure-dev-key-change-in-production-mikroot",
 )
 
-# SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config("DEBUG", default=True, cast=bool)
 
 DJANGO_ADMIN_URL = config("DJANGO_ADMIN_URL", default="super-manager-panel-2026")
 
-ALLOWED_HOSTS = ["*"]
+BASE_DOMAIN = config("BASE_DOMAIN", default="mikroot.app")
+
+ALLOWED_HOSTS = config(
+    "ALLOWED_HOSTS",
+    default=f"api.{BASE_DOMAIN},app.{BASE_DOMAIN},{BASE_DOMAIN},127.0.0.1,localhost,187.7.20.53",
+    cast=lambda v: [s.strip() for s in v.split(",") if s.strip()],
+)
 APPEND_SLASH = False
 
 # Application definition
@@ -173,7 +178,8 @@ CORS_ALLOW_METHODS = [
 ]
 
 # Paramètres Métier Mikroot
-VPN_SERVER_HOST = config("VPN_SERVER_HOST", default="vpn.mikroot.net")
+VPN_SERVER_HOST = config("VPN_SERVER_HOST", default=f"vpn.{BASE_DOMAIN}")
+MIKHMON_BASE_DOMAIN = config("MIKHMON_BASE_DOMAIN", default=BASE_DOMAIN)
 VPN_SUBNET = config("VPN_SUBNET", default="10.8.0.0/24")
 VPN_API_PORT_START = config("VPN_API_PORT_START", default=41000, cast=int)
 VPN_WINBOX_PORT_START = config("VPN_WINBOX_PORT_START", default=51000, cast=int)

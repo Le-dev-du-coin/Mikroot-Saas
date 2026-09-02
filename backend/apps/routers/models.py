@@ -107,7 +107,7 @@ class VpnCredential(models.Model):
     vpn_server = models.CharField(
         "Serveur VPN",
         max_length=100,
-        default=getattr(settings, "VPN_SERVER_HOST", "vpn.mikroot.net"),
+        default=getattr(settings, "VPN_SERVER_HOST", "vpn.mikroot.app"),
     )
     # Identifiants L2TP / IPsec (ROS 6)
     vpn_user = models.CharField("Utilisateur VPN L2TP", max_length=64, unique=True)
@@ -152,9 +152,11 @@ class VpnCredential(models.Model):
         vpn_user = f"{router.name.lower()}_{router.id.hex[:6]}"
         vpn_password = secrets.token_hex(16)
         wg_priv, wg_pub = generate_wireguard_keypair()
+        server_host = getattr(settings, "VPN_SERVER_HOST", f"vpn.{getattr(settings, 'BASE_DOMAIN', 'mikroot.app')}")
 
         return cls.objects.create(
             router=router,
+            vpn_server=server_host,
             vpn_user=vpn_user,
             vpn_password=vpn_password,
             wireguard_private_key=wg_priv,

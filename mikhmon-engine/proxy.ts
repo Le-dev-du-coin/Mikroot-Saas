@@ -54,11 +54,20 @@ export async function proxy(request: NextRequest) {
   }
 
   if (!space) {
-    const host = request.headers.get("host") || "";
-    if (host.includes(".mikroot.net") || host.includes(".localhost")) {
-      const sub = host.split(".")[0];
-      if (sub && sub !== "www" && sub !== "localhost") {
-        space = sub.toLowerCase();
+    const nginxTenant = request.headers.get("x-tenant-space");
+    if (nginxTenant && nginxTenant.trim()) {
+      space = nginxTenant.trim().toLowerCase();
+    }
+  }
+
+  if (!space) {
+    const host = (request.headers.get("host") || "").split(":")[0];
+    const parts = host.split(".");
+    // Support universel de tout nom de domaine (ex: espace.mikroot.app, espace.mondomaine.com, espace.localhost)
+    if (parts.length >= 3 || (parts.length === 2 && parts[1] === "localhost")) {
+      const sub = parts[0].toLowerCase();
+      if (!["www", "localhost", "app", "api", "vpn", "admin"].includes(sub)) {
+        space = sub;
       }
     }
   }
