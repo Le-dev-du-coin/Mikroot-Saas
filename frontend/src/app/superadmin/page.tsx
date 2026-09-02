@@ -2,6 +2,7 @@
 
 import LangToggle from "@/components/LangToggle";
 import ThemeToggle from "@/components/ThemeToggle";
+import { useAuth } from "@/context/AuthContext";
 import { formatFCFA } from "@/lib/utils";
 import {
   ArrowLeft,
@@ -16,11 +17,25 @@ import {
   Users,
   Wallet,
   X,
+  Loader2,
 } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 export default function SuperAdminPage() {
+  const router = useRouter();
+  const { user, isLoading } = useAuth();
+
+  useEffect(() => {
+    if (!isLoading) {
+      if (!user) {
+        router.push("/login?redirect=/superadmin");
+      } else if (user.role !== "SUPERADMIN") {
+        router.push("/dashboard");
+      }
+    }
+  }, [user, isLoading, router]);
   const [instancePrice, setInstancePrice] = useState("1000");
   const [routerPrice, setRouterPrice] = useState("500");
   const [savedSuccess, setSavedSuccess] = useState(false);

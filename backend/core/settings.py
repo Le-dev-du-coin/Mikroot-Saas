@@ -78,12 +78,28 @@ ASGI_APPLICATION = "core.asgi.application"
 AUTH_USER_MODEL = "accounts.User"
 
 # Database Configuration
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+DATABASE_URL = config("DATABASE_URL", default=None)
+
+if DATABASE_URL:
+    import urllib.parse
+    url = urllib.parse.urlparse(DATABASE_URL)
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql" if url.scheme in ("postgres", "postgresql") else "django.db.backends.sqlite3",
+            "NAME": url.path.lstrip("/"),
+            "USER": url.username,
+            "PASSWORD": url.password,
+            "HOST": url.hostname,
+            "PORT": url.port or 5432,
+        }
     }
-}
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
+    }
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
