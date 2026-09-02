@@ -1,0 +1,37 @@
+version: "3.8"
+
+services:
+  # ============================================================================
+  # MIKROOT VPN SERVER - DOCKER COMPOSE
+  # Serveur WireGuard ultra-rapide avec redirection dynamique de ports
+  # ============================================================================
+  wireguard:
+    image: linuxserver/wireguard:latest
+    container_name: mikroot_wireguard
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Africa/Abidjan
+      - SERVERURL=vpn.mikroot.net
+      - SERVERPORT=51820
+      - PEERS=50
+      - PEERDNS=8.8.8.8,1.1.1.1
+      - INTERNAL_SUBNET=10.8.0.0/24
+      - ALLOWEDIPS=0.0.0.0/0
+    volumes:
+      - ./config:/config
+      - /lib/modules:/lib/modules
+    ports:
+      # Port WireGuard UDP principal
+      - "51820:51820/udp"
+      # Plage Ports API MikroTik (Mikhmon-Next -> MikroTik)
+      - "41001-41100:41001-41100/tcp"
+      # Plage Ports Winbox (Technicien -> MikroTik)
+      - "51001-51100:51001-51100/tcp"
+    sysctls:
+      - net.ipv4.conf.all.src_valid_mark=1
+      - net.ipv4.ip_forward=1
+    restart: unless-stopped

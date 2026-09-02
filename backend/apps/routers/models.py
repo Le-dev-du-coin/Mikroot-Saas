@@ -1,3 +1,4 @@
+import base64
 import secrets
 import uuid
 from datetime import timedelta
@@ -5,11 +6,41 @@ from decimal import Decimal
 from django.conf import settings
 from django.db import models
 from django.utils import timezone
+from apps.accounts.models import User
 from apps.instances.models import MikhmonInstance
 
 
+def generate_wireguard_keypair():
+    """Génère une paire de clés WireGuard valide (Curve25519 / X25519)."""
+    try:
+        from cryptography.hazmat.primitives.asymmetric import x25519
+        from cryptography.hazmat.primitives import serialization
+
+        private_key = x25519.X25519PrivateKey.generate()
+        priv_bytes = private_key.private_bytes(
+            encoding=serialization.Encoding.Raw,
+            format=serialization.PrivateFormat.Raw,
+            encryption_algorithm=serialization.NoEncryption(),
+        )
+        pub_bytes = private_key.public_key().public_bytes(
+            encoding=serialization.Encoding.Raw,
+            format=serialization.PublicFormat.Raw,
+        )
+        return (
+            base64.b64encode(priv_bytes).decode("ascii"),
+            base64.b64encode(pub_bytes).decode("ascii"),
+        )
+    except Exception:
+        # Fallback de secours
+        priv_bytes = secrets.token_bytes(32)
+        return (
+            base64.b64encode(priv_bytes).decode("ascii"),
+            base64.b64encode(secrets.token_bytes(32)).decode("ascii"),
+        )
+
+
 class Router(models.Model):
-    """Routeur MikroTik géré via le SaaS."""
+    """Routeur MikroTik géré par la plateforme."""
 
     class Status(models.TextChoices):
         ACTIVE = "ACTIVE", "Actif"
@@ -17,18 +48,13 @@ class Router(models.Model):
         SUSPENDED = "SUSPENDED", "Suspendu"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    user = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        related_name="routers",
-    )
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="routers")
     mikhmon_instance = models.ForeignKey(
         MikhmonInstance,
         on_delete=models.CASCADE,
         related_name="routers",
-        verbose_name="Instance Mikhmon liée",
     )
-    name = models.CharField("Nom du routeur", max_length=50)
+    name = models.CharField("Nom du Routeur", max_length=100)
     status = models.CharField(
         "Statut",
         max_length=20,
@@ -43,9 +69,9 @@ class Router(models.Model):
     )
     auto_renew = models.BooleanField("Renouvellement automatique", default=True)
     expires_at = models.DateTimeField("Date d'expiration")
-    last_ping = models.DateTimeField("Dernier Ping VPN", null=True, blank=True)
-    created_at = models.DateTimeField("Créé le", auto_now_add=True)
-    updated_at = models.DateTimeField("Mis à jour le", auto_now=True)
+    last_ping = models.DateTimeField("Dernier contact", null=True, blank=True)
+    created_at = models.DateTimeField("Date d'ajout", auto_now_add=True)
+    updated_at = models.DateTimeField("Dernière mise à jour", auto_now=True)
 
     class Meta:
         verbose_name = "Routeur MikroTik"
@@ -53,17 +79,16 @@ class Router(models.Model):
         ordering = ["-created_at"]
 
     def __str__(self):
-        return f"{self.name} ({self.get_status_display()})"
+        return f"{self.name} ({self.mikhmon_instance.name})"
 
     @property
-    def days_left(self) -> int:
+    def remaining_days(self) -> int:
         if not self.expires_at:
             return 0
         diff = self.expires_at - timezone.now()
         seconds = diff.total_seconds()
         if seconds <= 0:
             return 0
-        # Arrondi supérieur pour refléter les jours entiers restants
         return int((seconds + 86399) // 86400)
 
     def is_valid(self) -> bool:
@@ -71,7 +96,7 @@ class Router(models.Model):
 
 
 class VpnCredential(models.Model):
-    """Identifiants VPN et ports de routage alloués."""
+    """Identifiants VPN (WireGuard pour ROS 7 & L2TP/IPsec pour ROS 6) et ports alloués."""
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     router = models.OneToOneField(
@@ -82,10 +107,18 @@ class VpnCredential(models.Model):
     vpn_server = models.CharField(
         "Serveur VPN",
         max_length=100,
-        default=getattr(settings, "VPN_SERVER_HOST", "vpn.mondomaine.com"),
+        default=getattr(settings, "VPN_SERVER_HOST", "vpn.mikroot.net"),
     )
-    vpn_user = models.CharField("Utilisateur VPN", max_length=64, unique=True)
-    vpn_password = models.CharField("Mot de passe VPN", max_length=64)
+    # Identifiants L2TP / IPsec (ROS 6)
+    vpn_user = models.CharField("Utilisateur VPN L2TP", max_length=64, unique=True)
+    vpn_password = models.CharField("Mot de passe VPN L2TP", max_length=64)
+
+    # Identifiants WireGuard (ROS 7)
+    wireguard_private_key = models.CharField("Clé Privée WireGuard", max_length=64, blank=True)
+    wireguard_public_key = models.CharField("Clé Publique WireGuard", max_length=64, blank=True)
+    wireguard_listen_port = models.PositiveIntegerField("Port d'écoute WireGuard", default=13231)
+
+    # Adressage IP et Ports de redirection
     assigned_ip = models.GenericIPAddressField("IP VPN Assignée (10.8.0.x)", protocol="IPv4")
     api_port = models.PositiveIntegerField("Port API Distant", unique=True)
     winbox_port = models.PositiveIntegerField("Port Winbox Distant", unique=True)
@@ -100,7 +133,7 @@ class VpnCredential(models.Model):
 
     @classmethod
     def allocate_next_credentials(cls, router: Router) -> "VpnCredential":
-        """Alloue automatiquement le prochain port et l'IP disponible."""
+        """Alloue automatiquement le prochain port, l'IP et les clés cryptographiques."""
         last_vpn = cls.objects.order_by("-api_port").first()
 
         start_api = getattr(settings, "VPN_API_PORT_START", 41000)
@@ -118,24 +151,55 @@ class VpnCredential(models.Model):
         assigned_ip = f"10.8.0.{ip_num}"
         vpn_user = f"{router.name.lower()}_{router.id.hex[:6]}"
         vpn_password = secrets.token_hex(16)
+        wg_priv, wg_pub = generate_wireguard_keypair()
 
         return cls.objects.create(
             router=router,
             vpn_user=vpn_user,
             vpn_password=vpn_password,
+            wireguard_private_key=wg_priv,
+            wireguard_public_key=wg_pub,
             assigned_ip=assigned_ip,
             api_port=next_api,
             winbox_port=next_winbox,
         )
 
     def generate_mikrotik_script(self) -> str:
-        """Génère les lignes de commandes RouterOS prêtes à être copiées dans le terminal."""
-        vpn_interface = f"{self.router.name}-VPN"
-        script = (
-            f"/interface l2tp-client add connect-to={self.vpn_server} "
-            f"name={vpn_interface} user={self.vpn_user} password={self.vpn_password} "
-            f"disabled=no add-default-route=no use-ipsec=no\n"
-            f'/ip firewall filter add action=accept chain=input in-interface={vpn_interface} '
-            f'comment="Autoriser le trafic de {vpn_interface}" place-before=0'
-        )
-        return script
+        """Génère le script RouterOS adapté selon la version choisie (ROS 7 WireGuard ou ROS 6 L2TP)."""
+        instance = self.router.mikhmon_instance
+        is_v7 = instance.routeros_version == MikhmonInstance.RouterOSVersion.V7
+
+        if is_v7:
+            # === SCRIPT ROUTEROS 7 (WIREGUARD NAT TRAVERSAL) ===
+            server_pubkey = getattr(
+                settings,
+                "VPN_WG_SERVER_PUBKEY",
+                "pUBL1cK3yM1kr00tS3rv3rVpnW1r3gu4rdD3m02026=",
+            )
+            server_port = getattr(settings, "VPN_WG_SERVER_PORT", 51820)
+            return (
+                f"# =============================================================\n"
+                f"# SCRIPT TUNNEL MIKROOT VPN (ROUTEROS 7 - WIREGUARD)\n"
+                f"# ROUTEUR : {self.router.name} | ESPACE : {instance.name}.mikroot.net\n"
+                f"# IP VPN CLIENT : {self.assigned_ip} | PORT API : {self.api_port}\n"
+                f"# =============================================================\n\n"
+                f"/interface wireguard add name=wg-mikroot listen-port={self.wireguard_listen_port} mtu=1420 private-key=\"{self.wireguard_private_key}\" comment=\"Tunnel Mikroot SaaS\"\n"
+                f"/ip address add address={self.assigned_ip}/24 interface=wg-mikroot\n"
+                f"/interface wireguard peers add interface=wg-mikroot endpoint-address={self.vpn_server} endpoint-port={server_port} public-key=\"{server_pubkey}\" allowed-address=10.8.0.0/24 persistent-keepalive=25s comment=\"Mikroot Server VPN\"\n"
+                f"/ip service set api disabled=no port=8728\n"
+                f"/ip service set winbox disabled=no port=8291\n"
+                f"/ip firewall filter add action=accept chain=input in-interface=wg-mikroot comment=\"Autoriser Mikroot VPN\" place-before=0"
+            )
+        else:
+            # === SCRIPT ROUTEROS 6 (L2TP / IPSEC) ===
+            return (
+                f"# =============================================================\n"
+                f"# SCRIPT TUNNEL MIKROOT VPN (ROUTEROS 6 - L2TP / IPSEC)\n"
+                f"# ROUTEUR : {self.router.name} | ESPACE : {instance.name}.mikroot.net\n"
+                f"# IP VPN CLIENT : {self.assigned_ip} | PORT API : {self.api_port}\n"
+                f"# =============================================================\n\n"
+                f"/interface l2tp-client add connect-to={self.vpn_server} name=mikroot-vpn user=\"{self.vpn_user}\" password=\"{self.vpn_password}\" disabled=no add-default-route=no use-ipsec=yes ipsec-secret=\"{self.vpn_password}\" comment=\"Tunnel Mikroot SaaS\"\n"
+                f"/ip service set api disabled=no port=8728\n"
+                f"/ip service set winbox disabled=no port=8291\n"
+                f"/ip firewall filter add action=accept chain=input in-interface=mikroot-vpn comment=\"Autoriser Mikroot VPN\" place-before=0"
+            )

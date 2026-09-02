@@ -196,3 +196,42 @@ class PingRouterView(APIView):
             "last_ping": router.last_ping,
             "status": "ONLINE",
         })
+
+
+class VpnSyncListView(APIView):
+    """Endpoint sécurisé pour la synchronisation automatique du serveur VPN Linux."""
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request):
+        secret = request.headers.get("X-VPN-Secret") or request.query_params.get("secret")
+        expected_secret = getattr(settings, "VPN_SYNC_SECRET", "mikroot-vpn-sync-secret-token-2026")
+
+        if not secret or secret != expected_secret:
+            return Response({"detail": "Non autorisé."}, status=status.HTTP_403_FORBIDDEN)
+
+        active_routers = Router.objects.filter(
+            status=Router.Status.ACTIVE,
+            expires_at__gt=timezone.now(),
+        ).select_related("mikhmon_instance", "vpn_credential")
+
+        peers = []
+        for r in active_routers:
+            vpn = getattr(r, "vpn_credential", None)
+            if vpn:
+                peers.append({
+                    "id": str(r.id),
+                    "name": r.name,
+                    "instance_name": r.mikhmon_instance.name,
+                    "routeros_version": r.mikhmon_instance.routeros_version,
+                    "assigned_ip": vpn.assigned_ip,
+                    "api_port": vpn.api_port,
+                    "winbox_port": vpn.winbox_port,
+                    "wireguard_public_key": vpn.wireguard_public_key,
+                    "l2tp_user": vpn.vpn_user,
+                    "l2tp_password": vpn.vpn_password,
+                })
+
+        return Response({
+            "count": len(peers),
+            "peers": peers,
+        })
