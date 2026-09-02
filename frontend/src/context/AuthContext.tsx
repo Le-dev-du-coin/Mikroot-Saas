@@ -2,7 +2,8 @@
 
 import React, { createContext, useContext, useEffect, useState } from "react";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "/api";
+const rawApi = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+const API_BASE = rawApi.endsWith("/api") ? rawApi : `${rawApi.replace(/\/+$/, "")}/api`;
 
 export interface UserProfile {
   id: string;

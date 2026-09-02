@@ -15,6 +15,8 @@ class RegisterView(APIView):
         serializer = RegisterSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
+            from apps.billing.models import Wallet
+            Wallet.objects.get_or_create(user=user, defaults={"balance": Decimal("0.00")})
             token, _ = Token.objects.get_or_create(user=user)
             return Response(
                 {

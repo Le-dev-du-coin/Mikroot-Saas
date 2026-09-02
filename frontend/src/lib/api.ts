@@ -5,7 +5,8 @@
 
 import { walletEvents } from "./wallet-events";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "/api";
+const rawApi = process.env.NEXT_PUBLIC_API_URL || "/api";
+const API_BASE = rawApi.endsWith("/api") ? rawApi : `${rawApi.replace(/\/+$/, "")}/api`;
 
 function getAuthHeaders(): HeadersInit {
   const token = typeof window !== "undefined" ? localStorage.getItem("mikroot_token") : null;
