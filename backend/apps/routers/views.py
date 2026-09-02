@@ -8,6 +8,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from apps.billing.models import PlatformSetting, Transaction, Wallet
 from apps.instances.models import MikhmonInstance
+from apps.instances.services import MikhmonProvisioningService
 from .models import Router, VpnCredential
 from .serializers import CreateRouterSerializer, RouterSerializer
 
@@ -89,6 +90,9 @@ class CreateRouterView(APIView):
                 description=f"Abonnement 30 jours pour le routeur '{router.name}'",
             )
 
+            # Provisionnement automatique dans Mikhmon-Next Engine
+            MikhmonProvisioningService.provision_router(router)
+
         return Response(
             {
                 "detail": f"Routeur '{router.name}' créé avec succès !",
@@ -118,6 +122,8 @@ class RouterDetailView(APIView):
             return Response({"detail": "Routeur introuvable."}, status=status.HTTP_404_NOT_FOUND)
 
         router_name = router.name
+        # Déprovisionnement automatique de Mikhmon-Next
+        MikhmonProvisioningService.deprovision_router(str(router.id))
         router.delete()
         return Response(
             {"detail": f"Le routeur '{router_name}' a été supprimé et ses accès VPN libérés."},
