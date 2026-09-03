@@ -2,6 +2,11 @@
 
 @custom-variant dark (&:is(.dark *));
 
+@theme {
+  --color-slate-850: #172033;
+  --color-slate-750: #26354a;
+}
+
 @layer base {
   :root {
     --bg-page: #f8fafc;
@@ -15,11 +20,23 @@
     --text-primary: #f1f5f9;
     --card-bg: #111827;
     --card-border: #1e293b;
+    color-scheme: dark;
   }
 
   body {
     background-color: var(--bg-page);
     color: var(--text-primary);
     transition: background-color 0.2s ease, color 0.2s ease;
+  }
+
+  /* Universal Dark Mode input & Autofill fix for Chrome/Edge */
+  .dark input:-webkit-autofill,
+  .dark input:-webkit-autofill:hover, 
+  .dark input:-webkit-autofill:focus,
+  .dark textarea:-webkit-autofill,
+  .dark select:-webkit-autofill {
+    -webkit-text-fill-color: #f8fafc !important;
+    -webkit-box-shadow: 0 0 0px 1000px #1e293b inset !important;
+    transition: background-color 5000s ease-in-out 0s;
   }
 }

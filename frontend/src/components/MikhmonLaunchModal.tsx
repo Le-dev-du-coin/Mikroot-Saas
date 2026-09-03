@@ -208,10 +208,10 @@ export default function MikhmonLaunchModal({
                 ) : (
                   <div className="space-y-3">
                     {routers.map((router) => {
-                      const apiPort = router.vpn?.api_port || 41001;
+                      const assignedIp = router.vpn?.assigned_ip || "10.8.0.2";
                       const winboxPort = router.vpn?.winbox_port || 51001;
-                      const endpointCustom = `${instance.name}.${BASE_DOMAIN}:${apiPort}`;
-                      const endpointVpn = `vpn.${BASE_DOMAIN}:${apiPort}`;
+                      const mikhmonEndpoint = `${assignedIp}:8728`;
+                      const winboxEndpoint = `187.7.20.53:${winboxPort}`;
 
                       return (
                         <div
@@ -225,49 +225,55 @@ export default function MikhmonLaunchModal({
                                 Routeur : {router.name}
                               </span>
                             </div>
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300">
-                              Port API {apiPort}
+                            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300">
+                              IP VPN {assignedIp}
                             </span>
                           </div>
 
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-mono">
-                            {/* Combined Host:Port Blocks */}
+                            {/* Block 1: IP for Mikhmon */}
                             <div
-                              onClick={() => handleCopy(endpointCustom, `ep-${router.id}`)}
-                              className="p-3 bg-white dark:bg-slate-900 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-700 transition-all cursor-pointer flex items-center justify-between"
-                              title="Cliquez pour copier l'IP MikroTik avec le port"
+                              onClick={() => handleCopy(mikhmonEndpoint, `mikh-${router.id}`)}
+                              className="p-3 bg-white dark:bg-slate-900 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-emerald-300 dark:hover:border-emerald-700 transition-all cursor-pointer flex items-center justify-between"
+                              title="Cliquez pour copier l'adresse pour Mikhmon"
                             >
                               <div className="min-w-0">
                                 <span className="block text-[9px] font-sans text-slate-500 dark:text-slate-400 uppercase font-bold">
-                                  IP MikroTik & Port (Host:Port)
+                                  🟢 IP MikroTik (Pour Mikhmon)
                                 </span>
-                                <span className="font-bold text-blue-600 dark:text-blue-400 truncate block">
-                                  {endpointCustom}
+                                <span className="font-bold text-emerald-600 dark:text-emerald-400 truncate block">
+                                  {mikhmonEndpoint}
                                 </span>
                               </div>
                               <Copy className="w-3.5 h-3.5 text-slate-400 shrink-0 ml-2" />
                             </div>
 
+                            {/* Block 2: Winbox Distant */}
                             <div
-                              onClick={() => handleCopy(router.name, `name-${router.id}`)}
-                              className="p-3 bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-800 transition-all cursor-pointer flex items-center justify-between"
-                              title="Cliquez pour copier le nom de session"
+                              onClick={() => handleCopy(winboxEndpoint, `wb-${router.id}`)}
+                              className="p-3 bg-white dark:bg-slate-900 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-700 transition-all cursor-pointer flex items-center justify-between"
+                              title="Cliquez pour copier l'adresse Winbox"
                             >
                               <div className="min-w-0">
-                                <span className="block text-[9px] font-sans text-slate-400 uppercase font-bold">
-                                  Session Name (Nom de session)
+                                <span className="block text-[9px] font-sans text-slate-500 dark:text-slate-400 uppercase font-bold">
+                                  🔵 Winbox Distant (Port {winboxPort})
                                 </span>
-                                <span className="font-bold text-slate-900 dark:text-white truncate block">
-                                  {router.name}
+                                <span className="font-bold text-blue-600 dark:text-blue-400 truncate block">
+                                  {winboxEndpoint}
                                 </span>
                               </div>
                               <Copy className="w-3.5 h-3.5 text-slate-400 shrink-0 ml-2" />
                             </div>
                           </div>
 
-                          <p className="text-[11px] text-slate-500 dark:text-slate-400 pt-1">
-                            Dans Mikhmon : collez <strong>{endpointCustom}</strong> dans le champ <em>IP MikroTik</em> et renseignez vos identifiants admin RouterOS.
-                          </p>
+                          <div className="text-[11px] text-slate-500 dark:text-slate-400 pt-1 space-y-1">
+                            <p>
+                              👉 <strong>Dans Mikhmon :</strong> collez <strong>{mikhmonEndpoint}</strong> dans le champ <em>IP MikroTik</em>.
+                            </p>
+                            <p>
+                              👉 <strong>Dans Winbox :</strong> saisissez <strong>{winboxEndpoint}</strong> dans <em>Connect To</em> pour gérer votre routeur à distance.
+                            </p>
+                          </div>
                         </div>
                       );
                     })}

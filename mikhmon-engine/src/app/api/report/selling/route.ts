@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAuthenticatedClient } from "@/lib/session";
+import { getAuthenticatedClient, getRouterSession } from "@/lib/session";
 import { withRateLimit } from "@/lib/rate-limit";
 
 const checkReadonlyRateLimit = withRateLimit("readonly");
@@ -56,8 +56,11 @@ export async function GET(request: NextRequest) {
       };
     });
 
+    const session = await getRouterSession();
+    const currency = session?.currency || "XOF";
+
     return NextResponse.json(
-      { success: true, data: sales },
+      { success: true, data: sales, currency },
       { headers: rateLimit.headers },
     );
   } catch (error) {

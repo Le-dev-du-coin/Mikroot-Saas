@@ -60,6 +60,7 @@ const monthFull = [
 
 export default function ReportPage() {
   const [sales, setSales] = useState<SaleRecord[]>([]);
+  const [currency, setCurrency] = useState("XOF");
   const [loading, setLoading] = useState(true);
   const [searchMode, setSearchMode] = useState<"daily" | "monthly">("monthly");
   const [day, setDay] = useState(
@@ -76,7 +77,10 @@ export default function ReportPage() {
       else if (idbl) url += `?idbl=${idbl}`;
       const res = await fetch(url);
       const data = await res.json();
-      if (data.success) setSales(data.data);
+      if (data.success) {
+        setSales(data.data);
+        if (data.currency) setCurrency(data.currency);
+      }
     } catch (error) {
       console.error("Failed to load sales:", error);
     } finally {
@@ -98,7 +102,7 @@ export default function ReportPage() {
   }
 
   async function handleDelete() {
-    if (!window.confirm("Delete filtered records?")) return;
+    if (!window.confirm("Confirmez-vous la suppression des données filtrées ?")) return;
     try {
       let url = "/api/report/selling";
       if (searchMode === "daily")
@@ -107,11 +111,13 @@ export default function ReportPage() {
       const res = await fetch(url, { method: "DELETE" });
       const data = await res.json();
       if (data.success) {
-        toast.success("Deleted");
-        loadSales();
-      } else toast.error(data.error || "Failed");
+        toast.success("Données supprimées avec succès");
+        handleFilter();
+      } else {
+        toast.error("Échec de la suppression");
+      }
     } catch {
-      toast.error("Failed to delete");
+      toast.error("Échec de la suppression");
     }
   }
 
@@ -180,13 +186,15 @@ export default function ReportPage() {
       },
       {
         accessorKey: "price",
-        header: () => <div className="text-right">Price</div>,
+        header: () => <div className="text-right">Montant</div>,
         cell: ({ row }) => (
-          <div className="text-right">{row.original.price}</div>
+          <div className="text-right font-bold font-mono">
+            {row.original.price} {currency}
+          </div>
         ),
       },
     ],
-    [],
+    [currency],
   );
 
   if (loading)
@@ -201,18 +209,18 @@ export default function ReportPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">
-          Selling Report {monthFull[parseInt(monthIdx)]} {year}
+          Rapport des Ventes - {monthFull[parseInt(monthIdx)]} {year}
         </h1>
         <div className="text-right">
-          <div className="text-sm text-muted-foreground">Total</div>
-          <div className="text-2xl font-bold">
-            Rp {totalPrice.toLocaleString()}
+          <div className="text-sm text-muted-foreground">Recettes Totales</div>
+          <div className="text-2xl font-bold font-mono text-emerald-600 dark:text-emerald-400">
+            {totalPrice.toLocaleString()} {currency}
           </div>
         </div>
       </div>
       <Card>
         <CardHeader>
-          <CardTitle>Search</CardTitle>
+          <CardTitle>Recherche & Filtres</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex gap-4">
@@ -220,19 +228,19 @@ export default function ReportPage() {
               variant={searchMode === "daily" ? "default" : "outline"}
               onClick={() => setSearchMode("daily")}
             >
-              Day
+              Journalier
             </Button>
             <Button
               variant={searchMode === "monthly" ? "default" : "outline"}
               onClick={() => setSearchMode("monthly")}
             >
-              Monthly
+              Mensuel
             </Button>
           </div>
           <div className="grid grid-cols-3 gap-4">
             {searchMode === "daily" && (
               <div className="space-y-2">
-                <Label>Day</Label>
+                <Label>Jour</Label>
                 <Select value={day} onValueChange={setDay}>
                   <SelectTrigger>
                     <SelectValue />
@@ -248,7 +256,7 @@ export default function ReportPage() {
               </div>
             )}
             <div className="space-y-2">
-              <Label>Month</Label>
+              <Label>Mois</Label>
               <Select value={monthIdx} onValueChange={setMonthIdx}>
                 <SelectTrigger>
                   <SelectValue />
@@ -263,7 +271,7 @@ export default function ReportPage() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Year</Label>
+              <Label>Année</Label>
               <Select value={year} onValueChange={setYear}>
                 <SelectTrigger>
                   <SelectValue />
@@ -279,15 +287,15 @@ export default function ReportPage() {
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button onClick={handleFilter}>Filter</Button>
+            <Button onClick={handleFilter}>Filtrer</Button>
             <Button variant="outline" onClick={exportToCSV}>
-              CSV
+              Exporter CSV
             </Button>
             <Button variant="outline" onClick={() => loadSales()}>
-              All
+              Tout afficher
             </Button>
             <Button variant="destructive" onClick={handleDelete}>
-              Delete data
+              Purger les données
             </Button>
           </div>
         </CardContent>
@@ -297,10 +305,10 @@ export default function ReportPage() {
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2">
               <DollarSign className="h-5 w-5" />
-              Selling Report
+              Historique des Ventes
             </CardTitle>
             <div className="text-sm text-muted-foreground">
-              {sales.length} records
+              {sales.length} vente(s)
             </div>
           </div>
         </CardHeader>

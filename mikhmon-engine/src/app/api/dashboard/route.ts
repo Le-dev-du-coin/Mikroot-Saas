@@ -66,7 +66,7 @@ export async function GET(request: Request) {
           activeUsers: activeUsers.length,
           totalUsers: users.length,
           interfaces: interfaces || [],
-          currency: session?.currency || "Rp",
+          currency: session?.currency || "XOF",
         },
       },
       { headers: rateLimit.headers },
