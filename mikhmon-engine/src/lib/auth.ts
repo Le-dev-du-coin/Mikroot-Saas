@@ -2,6 +2,10 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
+  secret:
+    process.env.AUTH_SECRET ||
+    process.env.NEXTAUTH_SECRET ||
+    "mikroot-super-secret-mikhmon-next-auth-key-2026-production",
   trustHost: true,
   providers: [
     Credentials({
@@ -62,6 +66,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   ],
   pages: {
     signIn: "/login",
+    error: "/login",
   },
   callbacks: {
     authorized: async ({ auth }) => {
