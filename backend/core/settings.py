@@ -18,7 +18,7 @@ DEBUG = config("DEBUG", default=True, cast=bool)
 
 DJANGO_ADMIN_URL = config("DJANGO_ADMIN_URL", default="super-manager-panel-2026")
 
-BASE_DOMAIN = config("BASE_DOMAIN", default="tikzone.net")
+BASE_DOMAIN = config("BASE_DOMAIN", default="mikroot.app")
 
 ALLOWED_HOSTS = config(
     "ALLOWED_HOSTS",
