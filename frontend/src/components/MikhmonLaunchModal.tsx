@@ -7,11 +7,9 @@ import {
   CheckCircle2,
   Copy,
   ExternalLink,
-  Eye,
   Globe,
   Info,
   KeyRound,
-  Maximize2,
   Router as RouterIcon,
   Server,
   ShieldCheck,
@@ -31,7 +29,6 @@ export default function MikhmonLaunchModal({
   instance,
   onClose,
 }: MikhmonLaunchModalProps) {
-  const [activeTab, setActiveTab] = useState<"CONFIG" | "EMBED">("CONFIG");
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
   const routers = instance.routers || [];
@@ -84,37 +81,8 @@ export default function MikhmonLaunchModal({
           </button>
         </div>
 
-        {/* Navigation Tabs */}
-        <div className="flex items-center px-6 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0">
-          <button
-            onClick={() => setActiveTab("CONFIG")}
-            className={`py-3.5 px-4 text-xs font-bold border-b-2 transition-all cursor-pointer flex items-center gap-2 ${
-              activeTab === "CONFIG"
-                ? "border-blue-600 text-blue-600 dark:text-blue-400"
-                : "border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
-            }`}
-          >
-            <KeyRound className="w-4 h-4" />
-            <span>Paramètres & Sessions Routeurs</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab("EMBED")}
-            className={`py-3.5 px-4 text-xs font-bold border-b-2 transition-all cursor-pointer flex items-center gap-2 ${
-              activeTab === "EMBED"
-                ? "border-blue-600 text-blue-600 dark:text-blue-400"
-                : "border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
-            }`}
-          >
-            <Eye className="w-4 h-4" />
-            <span>Visualiseur Intégré (iFrame)</span>
-          </button>
-        </div>
-
         {/* Body Content */}
         <div className="p-5 sm:p-6 space-y-6 overflow-y-auto flex-1">
-          {activeTab === "CONFIG" ? (
-            <>
               {/* Top Action Box */}
               <div className="p-4 bg-gradient-to-tr from-blue-50 to-indigo-50 dark:from-blue-950/40 dark:to-indigo-950/40 border border-blue-200 dark:border-blue-900/60 rounded-3xl space-y-3">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -280,30 +248,6 @@ export default function MikhmonLaunchModal({
                   </div>
                 )}
               </div>
-            </>
-          ) : (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between text-xs text-slate-500">
-                <span>Rendu direct de l'instance Mikhmon</span>
-                <a
-                  href={instance.subdomain_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="font-bold text-blue-600 hover:underline flex items-center gap-1"
-                >
-                  <span>Plein écran</span>
-                  <Maximize2 className="w-3 h-3" />
-                </a>
-              </div>
-              <div className="rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden bg-slate-950 h-[450px]">
-                <iframe
-                  src={instance.subdomain_url}
-                  title={`Mikhmon ${instance.name}`}
-                  className="w-full h-full border-0 bg-white"
-                />
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Footer */}

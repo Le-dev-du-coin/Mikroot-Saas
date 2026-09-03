@@ -4,8 +4,8 @@ import "./globals.css";
 import { ThemeProvider, SessionProvider } from "@/components/providers";
 
 export const metadata: Metadata = {
-  title: "Mikroot Hotspot - Gestionnaire MikroTik",
-  description: "Système de Gestion Hotspots MikroTik et Impression de Tickets Mikroot",
+  title: "TikZone Hotspot - Gestionnaire MikroTik",
+  description: "Système de Gestion Hotspots MikroTik et Impression de Tickets TikZone",
 };
 
 export default function RootLayout({

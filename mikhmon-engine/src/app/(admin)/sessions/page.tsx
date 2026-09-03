@@ -142,7 +142,8 @@ export default function SessionsPage() {
       if (result.success) {
         toast.success("Identifiants mis à jour");
         if (result.requireRelogin) {
-          signOut({ callbackUrl: "/login" });
+          await signOut({ redirect: false });
+          window.location.href = "/login";
         }
       } else {
         toast.error(result.error || "Erreur lors de la mise à jour");

@@ -115,16 +115,26 @@
   --sidebar-ring: oklch(0.556 0 0);
 }
 
-  .dark {
-    color-scheme: dark;
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
   }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
 
-  .dark input:-webkit-autofill,
-  .dark input:-webkit-autofill:hover, 
-  .dark input:-webkit-autofill:focus,
-  .dark textarea:-webkit-autofill,
-  .dark select:-webkit-autofill {
-    -webkit-text-fill-color: #f8fafc !important;
-    -webkit-box-shadow: 0 0 0px 1000px #1e293b inset !important;
-    transition: background-color 5000s ease-in-out 0s;
-  }
+.dark {
+  color-scheme: dark;
+}
+
+/* Universal Dark Mode input & Autofill fix for Chrome/Edge */
+.dark input:-webkit-autofill,
+.dark input:-webkit-autofill:hover, 
+.dark input:-webkit-autofill:focus,
+.dark textarea:-webkit-autofill,
+.dark select:-webkit-autofill {
+  -webkit-text-fill-color: #f8fafc !important;
+  -webkit-box-shadow: 0 0 0px 1000px #1e293b inset !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
