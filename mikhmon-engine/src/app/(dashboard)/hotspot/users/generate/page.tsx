@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Users, X } from "lucide-react";
+import { Loader2, Users, X, Sparkles, Printer } from "lucide-react";
 import { FormSkeleton } from "@/components/ui/page-skeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,12 +31,12 @@ export default function GenerateUsersPage() {
   const [generating, setGenerating] = useState(false);
 
   const [formData, setFormData] = useState({
-    qty: 1,
+    qty: 10,
     server: "all",
     userMode: "vc", // vc = user=pass, up = user+pass
-    userLength: 4,
+    userLength: 6,
     prefix: "",
-    charMode: "mix", // lower, upper, upplow, mix, mix1, mix2, num
+    charMode: "num", // lower, upper, upplow, mix, mix1, mix2, num
     profile: "",
     timeLimit: "",
     dataLimit: "",
@@ -57,6 +57,9 @@ export default function GenerateUsersPage() {
         ]);
         if (profilesData.success) {
           setProfiles(profilesData.data);
+          if (profilesData.data.length > 0 && !formData.profile) {
+            setFormData((prev) => ({ ...prev, profile: profilesData.data[0].name }));
+          }
         }
         if (serversData.success) {
           setServers(serversData.data);
@@ -70,129 +73,42 @@ export default function GenerateUsersPage() {
     loadData();
   }, []);
 
-  function generateChars(length: number, mode: string): string {
-    const lower = "abcdefghijklmnopqrstuvwxyz";
-    const upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    const nums = "0123456789";
-
-    let chars = "";
-    switch (mode) {
-      case "lower":
-        chars = lower;
-        break;
-      case "upper":
-        chars = upper;
-        break;
-      case "upplow":
-        chars = lower + upper;
-        break;
-      case "mix":
-        chars = lower + nums;
-        break;
-      case "mix1":
-        chars = upper + nums;
-        break;
-      case "mix2":
-        chars = lower + upper + nums;
-        break;
-      case "num":
-        chars = nums;
-        break;
-      default:
-        chars = lower + nums;
-    }
-
-    let result = "";
-    for (let i = 0; i < length; i++) {
-      result += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return result;
-  }
-
   async function handleGenerate(e: React.FormEvent) {
     e.preventDefault();
 
     if (!formData.profile) {
-      toast.error("Profile wajib dipilih");
+      toast.error("Veuillez sélectionner un forfait / profil");
       return;
     }
 
     if (formData.qty < 1 || formData.qty > 500) {
-      toast.error("Quantity harus antara 1-500");
+      toast.error("La quantité doit être comprise entre 1 et 500");
       return;
     }
 
     setGenerating(true);
-    let successCount = 0;
-    let failCount = 0;
-
-    const dateStr = new Date()
-      .toLocaleDateString("en-US", {
-        month: "2-digit",
-        day: "2-digit",
-        year: "2-digit",
-      })
-      .replace(/\//g, ".");
-    const genCode = Math.floor(Math.random() * 900 + 100);
-    const commentBase = `gen-${genCode}-${dateStr}${formData.comment ? `-${formData.comment}` : ""}`;
 
     try {
-      for (let i = 0; i < formData.qty; i++) {
-        const chars = generateChars(formData.userLength, formData.charMode);
-        const username = formData.prefix + chars;
+      const res = await fetch("/api/hotspot/users/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
 
-        const password =
-          formData.userMode === "vc"
-            ? username
-            : generateChars(formData.userLength, "num");
+      const data = await res.json();
 
-        const userData: Record<string, string> = {
-          name: username,
-          password: password,
-          profile: formData.profile,
-          comment: commentBase,
-        };
-
-        if (formData.server !== "all") {
-          userData.server = formData.server;
-        }
-
-        if (formData.timeLimit) {
-          userData["limit-uptime"] = formData.timeLimit;
-        }
-
-        if (formData.dataLimit) {
-          const bytes =
-            parseInt(formData.dataLimit) * parseInt(formData.dataUnit);
-          userData["limit-bytes-total"] = bytes.toString();
-        }
-
-        const res = await fetch("/api/hotspot/users", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(userData),
-        });
-        const data = await res.json();
-
-        if (data.success) {
-          successCount++;
+      if (data.success) {
+        toast.success(data.message || `${data.count} tickets générés avec succès !`);
+        if (data.comment) {
+          router.push(`/hotspot/users?comment=${encodeURIComponent(data.comment)}`);
         } else {
-          failCount++;
+          router.push("/hotspot/users");
         }
-      }
-
-      if (successCount > 0) {
-        toast.success(`${successCount} ticket(s) généré(s) avec succès`);
-      }
-      if (failCount > 0) {
-        toast.error(`${failCount} ticket(s) en échec`);
-      }
-
-      if (successCount > 0) {
-        router.push("/hotspot/users");
+      } else {
+        toast.error(data.error || "Échec de la génération des tickets");
       }
     } catch {
-      toast.error("Échec de la génération des tickets");
+      toast.error("Erreur de communication avec le serveur");
     } finally {
       setGenerating(false);
     }
@@ -204,150 +120,157 @@ export default function GenerateUsersPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-3">
         <Button
           variant="outline"
           size="sm"
           onClick={() => router.push("/hotspot/users")}
+          className="rounded-xl"
         >
-          <X className="mr-2 h-4 w-4" />
-          Close
+          <X className="mr-1.5 h-4 w-4" />
+          Fermer
         </Button>
         <Button
           variant="outline"
           size="sm"
           onClick={() => router.push("/hotspot/users")}
+          className="rounded-xl"
         >
-          <Users className="mr-2 h-4 w-4" />
-          User List
+          <Users className="mr-1.5 h-4 w-4" />
+          Liste des Utilisateurs
         </Button>
-        <h1 className="text-xl font-semibold">Generate User</h1>
       </div>
 
       <form onSubmit={handleGenerate}>
-        <Card>
+        <Card className="max-w-3xl">
           <CardHeader>
-            <CardTitle>Generate User</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-blue-600" />
+              <span>Générateur de Tickets en Masse (1 à 500)</span>
+            </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label>Qty</Label>
-                  <Input
-                    type="number"
-                    min={1}
-                    max={500}
-                    value={formData.qty}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        qty: parseInt(e.target.value) || 1,
-                      })
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Server</Label>
-                  <Select
-                    value={formData.server}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, server: value })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">all</SelectItem>
-                      {servers.map((server) => (
-                        <SelectItem key={server[".id"]} value={server.name}>
-                          {server.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label>User Mode</Label>
-                  <Select
-                    value={formData.userMode}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, userMode: value })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="up">User + Password</SelectItem>
-                      <SelectItem value="vc">User = Password</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>User Length</Label>
-                  <Select
-                    value={formData.userLength.toString()}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, userLength: parseInt(value) })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {[3, 4, 5, 6, 7, 8].map((len) => (
-                        <SelectItem key={len} value={len.toString()}>
-                          {len}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label>Prefix</Label>
-                  <Input
-                    maxLength={6}
-                    value={formData.prefix}
-                    onChange={(e) =>
-                      setFormData({ ...formData, prefix: e.target.value })
-                    }
-                    placeholder="e.g. vc"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Character</Label>
-                  <Select
-                    value={formData.charMode}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, charMode: value })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="lower">Random abcd</SelectItem>
-                      <SelectItem value="upper">Random ABCD</SelectItem>
-                      <SelectItem value="upplow">Random aBcD</SelectItem>
-                      <SelectItem value="mix">Random 5ab2c34d</SelectItem>
-                      <SelectItem value="mix1">Random 5AB2C34D</SelectItem>
-                      <SelectItem value="mix2">Random 5aB2c34D</SelectItem>
-                      <SelectItem value="num">Random 1234</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+          <CardContent className="space-y-5">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label className="font-semibold">Quantité à générer (Max 500)</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={500}
+                  value={formData.qty}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      qty: parseInt(e.target.value) || 1,
+                    })
+                  }
+                  required
+                />
               </div>
 
               <div className="space-y-2">
-                <Label>Profile *</Label>
+                <Label className="font-semibold">Serveur Hotspot</Label>
+                <Select
+                  value={formData.server}
+                  onValueChange={(value) =>
+                    setFormData({ ...formData, server: value })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">all (Tous les serveurs)</SelectItem>
+                    {servers.map((server) => (
+                      <SelectItem key={server[".id"]} value={server.name}>
+                        {server.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label className="font-semibold">Format du Ticket (User / Pass)</Label>
+                <Select
+                  value={formData.userMode}
+                  onValueChange={(value) =>
+                    setFormData({ ...formData, userMode: value })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="vc">Code Unique (User = Pass)</SelectItem>
+                    <SelectItem value="up">Deux champs (User + Pass séparé)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="font-semibold">Longueur du Code (Caractères)</Label>
+                <Select
+                  value={formData.userLength.toString()}
+                  onValueChange={(value) =>
+                    setFormData({ ...formData, userLength: parseInt(value) })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[3, 4, 5, 6, 7, 8, 9, 10].map((len) => (
+                      <SelectItem key={len} value={len.toString()}>
+                        {len} caractères
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label className="font-semibold">Préfixe du code (Optionnel)</Label>
+                <Input
+                  maxLength={6}
+                  value={formData.prefix}
+                  onChange={(e) =>
+                    setFormData({ ...formData, prefix: e.target.value })
+                  }
+                  placeholder="ex: TK- ou A"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label className="font-semibold">Type de Caractères</Label>
+                <Select
+                  value={formData.charMode}
+                  onValueChange={(value) =>
+                    setFormData({ ...formData, charMode: value })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="num">Chiffres uniquement (123456)</SelectItem>
+                    <SelectItem value="mix">Minuscules + Chiffres (5ab2c3)</SelectItem>
+                    <SelectItem value="mix1">Majuscules + Chiffres (5AB2C3)</SelectItem>
+                    <SelectItem value="mix2">Maj + Min + Chiffres (5aB2c3)</SelectItem>
+                    <SelectItem value="lower">Minuscules seules (abcd)</SelectItem>
+                    <SelectItem value="upper">Majuscules seules (ABCD)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label className="font-semibold">Forfait / Profil Hotspot *</Label>
                 <Select
                   value={formData.profile}
                   onValueChange={(value) =>
@@ -355,92 +278,102 @@ export default function GenerateUsersPage() {
                   }
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select profile" />
+                    <SelectValue placeholder="Choisir un forfait" />
                   </SelectTrigger>
                   <SelectContent>
                     {profiles.map((profile) => (
                       <SelectItem key={profile[".id"]} value={profile.name}>
-                        {profile.name}{" "}
-                        {profile["rate-limit"]
-                          ? `(${profile["rate-limit"]})`
-                          : ""}
+                        {profile.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
 
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label>Time Limit</Label>
+              <div className="space-y-2">
+                <Label className="font-semibold">Limite de Temps (Optionnel)</Label>
+                <Input
+                  value={formData.timeLimit}
+                  onChange={(e) =>
+                    setFormData({ ...formData, timeLimit: e.target.value })
+                  }
+                  placeholder="ex: 1h, 3d, 1w"
+                />
+              </div>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label className="font-semibold">Limite de Volume de Données (Optionnel)</Label>
+                <div className="flex gap-2">
                   <Input
-                    value={formData.timeLimit}
+                    type="number"
+                    min={0}
+                    value={formData.dataLimit}
                     onChange={(e) =>
-                      setFormData({ ...formData, timeLimit: e.target.value })
+                      setFormData({ ...formData, dataLimit: e.target.value })
                     }
-                    placeholder="e.g. 1h, 30m, 1d"
+                    placeholder="ex: 500"
+                    className="flex-1"
                   />
-                </div>
-                <div className="space-y-2">
-                  <Label>Data Limit</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      type="number"
-                      min={0}
-                      max={9999}
-                      value={formData.dataLimit}
-                      onChange={(e) =>
-                        setFormData({ ...formData, dataLimit: e.target.value })
-                      }
-                      placeholder="0"
-                      className="flex-1"
-                    />
-                    <Select
-                      value={formData.dataUnit}
-                      onValueChange={(value) =>
-                        setFormData({ ...formData, dataUnit: value })
-                      }
-                    >
-                      <SelectTrigger className="w-20">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="1048576">MB</SelectItem>
-                        <SelectItem value="1073741824">GB</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  <Select
+                    value={formData.dataUnit}
+                    onValueChange={(value) =>
+                      setFormData({ ...formData, dataUnit: value })
+                    }
+                  >
+                    <SelectTrigger className="w-24">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1048576">MB</SelectItem>
+                      <SelectItem value="1073741824">GB</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label>Comment</Label>
+                <Label className="font-semibold">Commentaire du Lot (Optionnel)</Label>
                 <Input
                   value={formData.comment}
                   onChange={(e) =>
                     setFormData({ ...formData, comment: e.target.value })
                   }
-                  placeholder="User for comment"
+                  placeholder="ex: Lot-Dimanche"
                 />
               </div>
             </div>
+
+            <div className="pt-4 border-t flex justify-end gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => router.push("/hotspot/users")}
+                className="rounded-xl"
+              >
+                Annuler
+              </Button>
+              <Button
+                type="submit"
+                disabled={generating}
+                className="bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl min-w-[160px] cursor-pointer"
+              >
+                {generating ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Génération en cours...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="mr-2 h-4 w-4" />
+                    Générer {formData.qty} Ticket(s)
+                  </>
+                )}
+              </Button>
+            </div>
           </CardContent>
         </Card>
-
-        <div className="mt-6">
-          <Button
-            type="submit"
-            disabled={generating}
-            className="w-full sm:w-auto"
-          >
-            {generating ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Users className="mr-2 h-4 w-4" />
-            )}
-            Generate
-          </Button>
-        </div>
       </form>
     </div>
   );

@@ -30,7 +30,11 @@ function formatBytes(bytes: number): string {
 }
 
 // Convert HotspotUser to VoucherData
-function userToVoucher(user: HotspotUser): VoucherData {
+function userToVoucher(
+  user: HotspotUser,
+  idx?: number,
+  routerName?: string,
+): VoucherData {
   return {
     username: user.name,
     password: user.password,
@@ -40,6 +44,8 @@ function userToVoucher(user: HotspotUser): VoucherData {
       ? formatBytes(parseInt(user["limit-bytes-total"]))
       : undefined,
     server: user.comment,
+    hotspotName: routerName,
+    index: idx !== undefined ? idx + 1 : 1,
   };
 }
 
@@ -163,7 +169,7 @@ export default function HotspotUsersPage() {
   // Handle print single user - directly opens browser print dialog
   const handlePrintUser = useCallback(
     (user: HotspotUser, withQr: boolean) => {
-      printVouchers([userToVoucher(user)], { routerName, showQr: withQr });
+      printVouchers([userToVoucher(user, 0, routerName)], { routerName, showQr: withQr });
     },
     [routerName],
   );
@@ -189,13 +195,16 @@ export default function HotspotUsersPage() {
   const handleBulkPrint = useCallback(
     (withQr: boolean) => {
       if (filteredUsers.length === 0) {
-        toast.warning("No users to print");
+        toast.warning("Aucun utilisateur à imprimer");
         return;
       }
-      printVouchers(filteredUsers.map(userToVoucher), {
-        routerName,
-        showQr: withQr,
-      });
+      printVouchers(
+        filteredUsers.map((u, i) => userToVoucher(u, i, routerName)),
+        {
+          routerName,
+          showQr: withQr,
+        },
+      );
     },
     [filteredUsers, routerName],
   );
