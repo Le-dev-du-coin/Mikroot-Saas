@@ -220,11 +220,37 @@ export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
+    const comment = searchParams.get("comment");
+
+    if (comment) {
+      // Find and delete all users with this comment
+      const batchUsers = await client.getHotspotUsers([`?comment=${comment}`]);
+      let deletedCount = 0;
+      for (const u of batchUsers) {
+        if (u[".id"]) {
+          try {
+            await client.removeHotspotUser(u[".id"]);
+            deletedCount++;
+          } catch (err) {
+            console.error("Erreur suppression user batch:", err);
+          }
+        }
+      }
+      await client.disconnect();
+      return NextResponse.json(
+        {
+          success: true,
+          count: deletedCount,
+          message: `${deletedCount} ticket(s) du lot supprimé(s) avec succès`,
+        },
+        { headers: rateLimit.headers },
+      );
+    }
 
     if (!id || id.length > 50) {
       await client.disconnect();
       return NextResponse.json(
-        { success: false, error: "Valid User ID is required" },
+        { success: false, error: "ID d'utilisateur ou commentaire requis" },
         { status: 400, headers: rateLimit.headers },
       );
     }
@@ -233,13 +259,16 @@ export async function DELETE(request: NextRequest) {
     await client.disconnect();
 
     return NextResponse.json(
-      { success: true, message: "User deleted successfully" },
+      { success: true, message: "Utilisateur supprimé avec succès" },
       { headers: rateLimit.headers },
     );
   } catch (error) {
     console.error("Hotspot users DELETE error:", error);
+    try {
+      await client.disconnect();
+    } catch {}
     return NextResponse.json(
-      { success: false, error: "Failed to delete user" },
+      { success: false, error: "Échec de la suppression" },
       { status: 500, headers: rateLimit.headers },
     );
   }

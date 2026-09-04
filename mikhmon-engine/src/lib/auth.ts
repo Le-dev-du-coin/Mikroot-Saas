@@ -18,7 +18,26 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       async authorize(credentials) {
         const defaultAdminUser = process.env.ADMIN_USERNAME || "admin";
         const defaultAdminPass = process.env.ADMIN_PASSWORD || "mikroot2026";
-        const space = credentials?.space ? String(credentials.space).toLowerCase() : undefined;
+        let space = credentials?.space ? String(credentials.space).toLowerCase().trim() : undefined;
+        if (!space) {
+          try {
+            const { headers, cookies } = await import("next/headers");
+            const headersList = await headers();
+            const cookieStore = await cookies();
+            const headerSpace = headersList.get("x-tenant-space");
+            const cookieSpace = cookieStore.get("mikroot_space")?.value;
+            const host = (headersList.get("host") || "").split(":")[0];
+            const parts = host.split(".");
+            let hostSub: string | undefined = undefined;
+            if (parts.length >= 3 || (parts.length === 2 && parts[1] === "localhost")) {
+              const sub = parts[0].toLowerCase();
+              if (!["www", "localhost", "app", "api", "vpn", "admin"].includes(sub)) {
+                hostSub = sub;
+              }
+            }
+            space = headerSpace || cookieSpace || hostSub || undefined;
+          } catch {}
+        }
 
         // 1. Vérification dynamique avec le fichier spécifique du tenant/espace dans data/tenants/<space>.json
         if (space) {

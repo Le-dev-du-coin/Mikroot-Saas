@@ -39,6 +39,7 @@ export default function GenerateUsersPage() {
     charMode: "num", // lower, upper, upplow, mix, mix1, mix2, num
     profile: "",
     timeLimit: "",
+    price: "500",
     dataLimit: "",
     dataUnit: "1048576", // MB
     comment: "",
@@ -291,6 +292,22 @@ export default function GenerateUsersPage() {
               </div>
 
               <div className="space-y-2">
+                <Label className="font-semibold">Prix de Vente du Ticket (XOF / FCFA)</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  step={50}
+                  value={formData.price}
+                  onChange={(e) =>
+                    setFormData({ ...formData, price: e.target.value })
+                  }
+                  placeholder="ex: 500"
+                />
+              </div>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
                 <Label className="font-semibold">Limite de Temps (Optionnel)</Label>
                 <Input
                   value={formData.timeLimit}
@@ -300,9 +317,7 @@ export default function GenerateUsersPage() {
                   placeholder="ex: 1h, 3d, 1w"
                 />
               </div>
-            </div>
 
-            <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label className="font-semibold">Limite de Volume de Données (Optionnel)</Label>
                 <div className="flex gap-2">

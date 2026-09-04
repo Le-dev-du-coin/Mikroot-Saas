@@ -73,6 +73,7 @@ export async function POST(request: NextRequest) {
       timeLimit,
       dataLimit,
       dataUnit = "1048576",
+      price = "",
       comment = "",
     } = body;
 
@@ -101,7 +102,8 @@ export async function POST(request: NextRequest) {
       })
       .replace(/\//g, ".");
     const genCode = Math.floor(Math.random() * 900 + 100);
-    const commentBase = `gen-${genCode}-${dateStr}${comment ? `-${comment}` : ""}`;
+    const priceTag = price && String(price).trim() ? `_P${String(price).trim().replace(/[^0-9]/g, "")}` : "";
+    const commentBase = `gen-${genCode}-${dateStr}${priceTag}${comment ? `-${comment.trim()}` : ""}`;
 
     let successCount = 0;
     let failCount = 0;

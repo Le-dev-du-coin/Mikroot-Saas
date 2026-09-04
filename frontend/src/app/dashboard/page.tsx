@@ -426,42 +426,8 @@ export default function ClientDashboardPage() {
                               </span>
                             </div>
 
-                            {/* Copiable Host:Port Blocks */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                              <div
-                                onClick={() => copyToClipboard(apiEndpoint, "Port API & Domaine")}
-                                className="group p-3 rounded-2xl bg-slate-50 dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-blue-950/40 border border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-600 transition-all cursor-pointer flex items-center justify-between"
-                                title="Cliquez pour copier l'adresse API complète"
-                              >
-                                <div className="min-w-0">
-                                  <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 group-hover:text-blue-600 dark:group-hover:text-blue-400">
-                                    Port API MikroTik
-                                  </span>
-                                  <span className="font-mono text-xs font-black text-slate-900 dark:text-white truncate block">
-                                    {apiEndpoint}
-                                  </span>
-                                </div>
-                                <Copy className="w-4 h-4 text-slate-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 shrink-0 ml-2" />
-                              </div>
-
-                              <div
-                                onClick={() => copyToClipboard(winboxEndpoint, "Port Winbox & Domaine")}
-                                className="group p-3 rounded-2xl bg-slate-50 dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-blue-950/40 border border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-600 transition-all cursor-pointer flex items-center justify-between"
-                                title="Cliquez pour copier l'adresse Winbox complète"
-                              >
-                                <div className="min-w-0">
-                                  <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 group-hover:text-blue-600 dark:group-hover:text-blue-400">
-                                    Port Winbox Distant
-                                  </span>
-                                  <span className="font-mono text-xs font-black text-slate-900 dark:text-white truncate block">
-                                    {winboxEndpoint}
-                                  </span>
-                                </div>
-                                <Copy className="w-4 h-4 text-slate-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 shrink-0 ml-2" />
-                              </div>
-                            </div>
-
                             {/* Actions */}
+       {/* Actions */}
                             <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-slate-100 dark:border-slate-800">
                               <button
                                 type="button"

@@ -30,9 +30,10 @@ export default function LoginPage() {
       document.cookie = `mikroot_space=${qSpace}; path=/; max-age=2592000; SameSite=Lax`;
     } else if (typeof window !== "undefined") {
       const host = window.location.hostname;
-      if (host.includes(".mikroot.net") || host.includes(".localhost")) {
-        const sub = host.split(".")[0];
-        if (sub && sub !== "www" && sub !== "localhost") {
+      const parts = host.split(".");
+      if (parts.length >= 3 || (parts.length === 2 && parts[1] === "localhost")) {
+        const sub = parts[0].toLowerCase();
+        if (!["www", "localhost", "app", "api", "vpn", "admin"].includes(sub)) {
           setSpaceName(sub);
           document.cookie = `mikroot_space=${sub}; path=/; max-age=2592000; SameSite=Lax`;
         }

@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useEffect, useState, useMemo, useCallback, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { ColumnDef } from "@tanstack/react-table";
 import { Users, Trash2, Lock, Unlock, Printer, QrCode } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -35,6 +36,15 @@ function userToVoucher(
   idx?: number,
   routerName?: string,
 ): VoucherData {
+  let priceFormatted: string | undefined = undefined;
+  if (user.comment) {
+    const pMatch =
+      user.comment.match(/_P([0-9]+)/i) || user.comment.match(/price:([0-9]+)/i);
+    if (pMatch && pMatch[1]) {
+      priceFormatted = `${pMatch[1]} XOF`;
+    }
+  }
+
   return {
     username: user.name,
     password: user.password,
@@ -43,19 +53,30 @@ function userToVoucher(
     dataLimit: user["limit-bytes-total"]
       ? formatBytes(parseInt(user["limit-bytes-total"]))
       : undefined,
+    price: priceFormatted,
     server: user.comment,
     hotspotName: routerName,
     index: idx !== undefined ? idx + 1 : 1,
   };
 }
 
-export default function HotspotUsersPage() {
+function HotspotUsersContent() {
+  const searchParams = useSearchParams();
   const [users, setUsers] = useState<HotspotUser[]>([]);
   const [profiles, setProfiles] = useState<HotspotUserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedProfile, setSelectedProfile] = useState("all");
-  const [selectedComment, setSelectedComment] = useState("all");
+  const [selectedComment, setSelectedComment] = useState(
+    searchParams.get("comment") || "all"
+  );
   const [routerName, setRouterName] = useState<string>("");
+
+  useEffect(() => {
+    const commentParam = searchParams.get("comment");
+    if (commentParam) {
+      setSelectedComment(commentParam);
+    }
+  }, [searchParams]);
 
   const refreshUsers = useCallback(async () => {
     try {
@@ -208,6 +229,36 @@ export default function HotspotUsersPage() {
     },
     [filteredUsers, routerName],
   );
+
+  // Handle batch deletion by selected comment
+  const handleDeleteBatch = useCallback(async () => {
+    if (selectedComment === "all") return;
+    if (
+      !confirm(
+        `Êtes-vous sûr de vouloir supprimer tous les tickets du lot "${selectedComment}" (${filteredUsers.length} ticket(s)) ?`
+      )
+    ) {
+      return;
+    }
+
+    try {
+      const res = await fetch(
+        `/api/hotspot/users?comment=${encodeURIComponent(selectedComment)}`,
+        { method: "DELETE" }
+      );
+      const data = await res.json();
+      if (data.success) {
+        toast.success(data.message || `Lot "${selectedComment}" supprimé avec succès`);
+        setSelectedComment("all");
+        refreshUsers();
+      } else {
+        toast.error(data.error || "Échec de la suppression du lot");
+      }
+    } catch (error) {
+      console.error("Erreur suppression batch:", error);
+      toast.error("Erreur lors de la suppression du lot");
+    }
+  }, [selectedComment, filteredUsers.length, refreshUsers]);
 
   const columns: ColumnDef<HotspotUser>[] = useMemo(
     () => [
@@ -428,14 +479,14 @@ export default function HotspotUsersPage() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <Button
                   onClick={() => handleBulkPrint(false)}
                   variant="default"
                   size="sm"
                 >
                   <Printer className="mr-1 h-4 w-4" />
-                  Print
+                  Imprimer
                 </Button>
                 <Button
                   onClick={() => handleBulkPrint(true)}
@@ -443,18 +494,37 @@ export default function HotspotUsersPage() {
                   size="sm"
                 >
                   <QrCode className="mr-1 h-4 w-4" />
-                  QR
+                  QR Code
                 </Button>
+                {selectedComment !== "all" && (
+                  <Button
+                    onClick={handleDeleteBatch}
+                    variant="destructive"
+                    size="sm"
+                    className="cursor-pointer"
+                  >
+                    <Trash2 className="mr-1 h-4 w-4" />
+                    Supprimer ce lot ({filteredUsers.length})
+                  </Button>
+                )}
               </div>
             </div>
             <DataTable
               columns={columns}
               data={filteredUsers}
-              searchPlaceholder="Search users..."
+              searchPlaceholder="Rechercher des tickets..."
             />
           </div>
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function HotspotUsersPage() {
+  return (
+    <Suspense fallback={<PageSkeleton rows={8} columns={6} />}>
+      <HotspotUsersContent />
+    </Suspense>
   );
 }
