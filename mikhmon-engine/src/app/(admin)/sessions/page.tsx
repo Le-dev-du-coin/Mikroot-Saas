@@ -359,7 +359,7 @@ export default function SessionsPage() {
                   onChange={(e) =>
                     setAdminForm({ ...adminForm, username: e.target.value })
                   }
-                  className="rounded-xl h-11 bg-slate-50 dark:bg-slate-850 border-slate-200 dark:border-slate-700 text-sm font-medium"
+                  className="rounded-xl h-11 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-sm font-medium focus-visible:ring-blue-500"
                 />
               </div>
 
@@ -379,13 +379,13 @@ export default function SessionsPage() {
                       setAdminForm({ ...adminForm, password: e.target.value })
                     }
                     placeholder="Saisir un nouveau mot de passe"
-                    className="rounded-xl h-11 bg-slate-50 dark:bg-slate-850 border-slate-200 dark:border-slate-700 text-sm font-medium"
+                    className="rounded-xl h-11 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white dark:placeholder:text-slate-500 text-sm font-medium focus-visible:ring-blue-500"
                   />
                   <Button
                     type="button"
                     variant="outline"
                     size="icon"
-                    className="rounded-xl h-11 w-11 border-slate-200 dark:border-slate-700 cursor-pointer shrink-0"
+                    className="rounded-xl h-11 w-11 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer shrink-0"
                     onClick={() => setShowPassword(!showPassword)}
                   >
                     {showPassword ? (

@@ -176,7 +176,7 @@ export default function MikhmonLaunchModal({
                 ) : (
                   <div className="space-y-3">
                     {routers.map((router) => {
-                      const assignedIp = router.vpn?.assigned_ip || "10.8.0.2";
+                      const assignedIp = router.vpn?.assigned_ip || "172.29.88.2";
                       const winboxPort = router.vpn?.winbox_port || 51001;
                       const mikhmonEndpoint = `${assignedIp}:8728`;
                       const winboxEndpoint = `187.7.20.53:${winboxPort}`;

@@ -25,7 +25,7 @@ class RouterSerializer(serializers.ModelSerializer):
     vpn = VpnCredentialSerializer(source="vpn_credential", read_only=True)
     mikhmon_name = serializers.CharField(source="mikhmon_instance.name", read_only=True)
     mikhmon_url = serializers.CharField(source="mikhmon_instance.subdomain_url", read_only=True)
-    days_left = serializers.IntegerField(read_only=True)
+    days_left = serializers.IntegerField(source="remaining_days", read_only=True)
 
     class Meta:
         model = Router

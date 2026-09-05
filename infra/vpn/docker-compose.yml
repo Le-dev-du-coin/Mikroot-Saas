@@ -19,7 +19,7 @@ services:
       - SERVERPORT=51820
       - PEERS=50
       - PEERDNS=8.8.8.8,1.1.1.1
-      - INTERNAL_SUBNET=10.8.0.0/24
+      - INTERNAL_SUBNET=172.29.88.0/24
       - ALLOWEDIPS=0.0.0.0/0
     volumes:
       - ./config:/config

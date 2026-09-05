@@ -62,7 +62,7 @@ SERVER_PUBKEY=$(cat /etc/wireguard/server_public.key)
 cat <<EOF > /etc/wireguard/wg0.conf
 # Mikroot VPN Server Interface (RouterOS 7 Tunnel)
 [Interface]
-Address = 10.8.0.1/24
+Address = 172.29.88.1/24
 ListenPort = 51820
 PrivateKey = $SERVER_PRIVKEY
 SaveConfig = true
@@ -89,8 +89,8 @@ cat <<EOF > /etc/xl2tpd/xl2tpd.conf
 port = 1701
 
 [lns default]
-ip range = 10.8.1.100-10.8.1.250
-local ip = 10.8.1.1
+ip range = 172.29.89.100-172.29.89.250
+local ip = 172.29.89.1
 require chap = yes
 refuse pap = yes
 require authentication = yes
@@ -118,12 +118,12 @@ systemctl restart xl2tpd
 echo "[5/6] Configuration des règles de redirection dynamique de ports..."
 iptables -t nat -F PREROUTING
 
-# Redirection dynamique des ports 41002-41250 vers 10.8.0.x:8728 (API)
-# et 51002-51250 vers 10.8.0.x:8291 (Winbox)
+# Redirection dynamique des ports 41002-41250 vers 172.29.88.x:8728 (API)
+# et 51002-51250 vers 172.29.88.x:8291 (Winbox)
 for i in $(seq 2 250); do
   PORT_API=$((41000 + i))
   PORT_WINBOX=$((51000 + i))
-  CLIENT_IP="10.8.0.$i"
+  CLIENT_IP="172.29.88.$i"
 
   iptables -t nat -A PREROUTING -p tcp --dport $PORT_API -j DNAT --to-destination $CLIENT_IP:8728
   iptables -t nat -A PREROUTING -p tcp --dport $PORT_WINBOX -j DNAT --to-destination $CLIENT_IP:8291

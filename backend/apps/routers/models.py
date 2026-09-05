@@ -1,4 +1,5 @@
 import base64
+import ipaddress
 import secrets
 import uuid
 from datetime import timedelta
@@ -91,6 +92,11 @@ class Router(models.Model):
             return 0
         return int((seconds + 86399) // 86400)
 
+    @property
+    def days_left(self) -> int:
+        """Alias pour l'API REST."""
+        return self.remaining_days
+
     def is_valid(self) -> bool:
         return self.status == self.Status.ACTIVE and self.expires_at > timezone.now()
 
@@ -119,7 +125,7 @@ class VpnCredential(models.Model):
     wireguard_listen_port = models.PositiveIntegerField("Port d'écoute WireGuard", default=13231)
 
     # Adressage IP et Ports de redirection
-    assigned_ip = models.GenericIPAddressField("IP VPN Assignée (10.8.0.x)", protocol="IPv4")
+    assigned_ip = models.GenericIPAddressField("IP VPN Assignée", protocol="IPv4")
     api_port = models.PositiveIntegerField("Port API Distant", unique=True)
     winbox_port = models.PositiveIntegerField("Port Winbox Distant", unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -148,7 +154,9 @@ class VpnCredential(models.Model):
             next_winbox = start_winbox + 1
             ip_num = 2
 
-        assigned_ip = f"10.8.0.{ip_num}"
+        vpn_subnet = getattr(settings, "VPN_SUBNET", "172.29.88.0/24")
+        network = ipaddress.ip_network(vpn_subnet, strict=False)
+        assigned_ip = str(network[ip_num])
         vpn_user = f"{router.name.lower()}_{router.id.hex[:6]}"
         vpn_password = secrets.token_hex(16)
         wg_priv, wg_pub = generate_wireguard_keypair()
@@ -173,6 +181,7 @@ class VpnCredential(models.Model):
 
         if is_v7:
             # === SCRIPT ROUTEROS 7 (WIREGUARD NAT TRAVERSAL) ===
+            vpn_subnet = getattr(settings, "VPN_SUBNET", "172.29.88.0/24")
             server_pubkey = getattr(
                 settings,
                 "VPN_WG_SERVER_PUBKEY",
@@ -185,7 +194,7 @@ class VpnCredential(models.Model):
                 f"/ip address remove [find interface=wg-mikroot]\n"
                 f"/ip address add address={self.assigned_ip}/24 interface=wg-mikroot\n"
                 f"/interface wireguard peers remove [find interface=wg-mikroot]\n"
-                f"/interface wireguard peers add interface=wg-mikroot endpoint-address={self.vpn_server} endpoint-port={server_port} public-key=\"{server_pubkey}\" allowed-address=10.8.0.0/24 persistent-keepalive=25s comment=\"Mikroot VPN Server\"\n"
+                f"/interface wireguard peers add interface=wg-mikroot endpoint-address={self.vpn_server} endpoint-port={server_port} public-key=\"{server_pubkey}\" allowed-address={vpn_subnet} persistent-keepalive=25s comment=\"Mikroot VPN Server\"\n"
                 f"/ip service set api disabled=no port=8728 address=\"\"\n"
                 f"/ip service set winbox disabled=no port=8291 address=\"\"\n"
                 f"/ip firewall filter remove [find comment=\"Mikroot VPN API\"]\n"

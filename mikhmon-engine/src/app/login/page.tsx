@@ -109,7 +109,7 @@ export default function LoginPage() {
                 defaultValue="admin"
                 required
                 autoComplete="username"
-                className="h-11 rounded-xl bg-slate-50 dark:bg-slate-850 border-slate-200 dark:border-slate-700"
+                className="h-11 rounded-xl bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white dark:placeholder:text-slate-500"
               />
             </div>
 
@@ -124,7 +124,7 @@ export default function LoginPage() {
                 placeholder="••••••••••••"
                 required
                 autoComplete="current-password"
-                className="h-11 rounded-xl bg-slate-50 dark:bg-slate-850 border-slate-200 dark:border-slate-700"
+                className="h-11 rounded-xl bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white dark:placeholder:text-slate-500"
               />
             </div>
 

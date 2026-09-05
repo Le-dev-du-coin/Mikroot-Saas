@@ -4,6 +4,7 @@ import { formatFCFA } from "@/lib/utils";
 import { ArrowLeft, CheckCircle2, CreditCard, History, Phone, ShieldCheck, Smartphone, Wallet } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import CountrySelect from "@/components/CountrySelect";
 
 export default function WalletPage() {
   const [balance, setBalance] = useState(5000);
@@ -91,17 +92,7 @@ export default function WalletPage() {
           <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
             Pays de paiement *
           </label>
-          <select
-            value={country}
-            onChange={(e) => setCountry(e.target.value)}
-            className="w-full px-4 py-3 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium text-slate-800"
-          >
-            {countries.map((c) => (
-              <option key={c.code} value={c.code}>
-                {c.flag} {c.name}
-              </option>
-            ))}
-          </select>
+          <CountrySelect value={country} onChange={setCountry} />
         </div>
 
         {/* Amount Input */}

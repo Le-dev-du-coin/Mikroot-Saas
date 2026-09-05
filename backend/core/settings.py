@@ -180,7 +180,7 @@ CORS_ALLOW_METHODS = [
 # Paramètres Métier Mikroot
 VPN_SERVER_HOST = config("VPN_SERVER_HOST", default=f"vpn.{BASE_DOMAIN}")
 MIKHMON_BASE_DOMAIN = config("MIKHMON_BASE_DOMAIN", default=BASE_DOMAIN)
-VPN_SUBNET = config("VPN_SUBNET", default="10.8.0.0/24")
+VPN_SUBNET = config("VPN_SUBNET", default="172.29.88.0/24")
 VPN_API_PORT_START = config("VPN_API_PORT_START", default=41000, cast=int)
 VPN_WINBOX_PORT_START = config("VPN_WINBOX_PORT_START", default=51000, cast=int)
 VPN_WG_SERVER_PORT = config("VPN_WG_SERVER_PORT", default=51820, cast=int)
@@ -192,6 +192,5 @@ VPN_SYNC_SECRET = config(
     "VPN_SYNC_SECRET",
     default="mikroot-vpn-sync-secret-token-2026",
 )
-VPN_WINBOX_PORT_START = config("VPN_WINBOX_PORT_START", default=51000, cast=int)
 PRICE_MIKHMON_INSTANCE_FCFA = 1000
 PRICE_ROUTER_MONTHLY_FCFA = 500

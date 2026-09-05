@@ -5,6 +5,7 @@ import { formatFCFA } from "@/lib/utils";
 import { ArrowLeft, CheckCircle2, History, Smartphone, Wallet } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import CountrySelect from "@/components/CountrySelect";
 
 export default function DashboardWalletPage() {
   const [balance, setBalance] = useState<number>(() => {
@@ -121,17 +122,7 @@ export default function DashboardWalletPage() {
           <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
             Pays de paiement *
           </label>
-          <select
-            value={country}
-            onChange={(e) => setCountry(e.target.value)}
-            className="w-full px-4 py-3.5 text-sm bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-700 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium text-slate-800 dark:text-slate-200"
-          >
-            {countries.map((c) => (
-              <option key={c.code} value={c.code}>
-                {c.flag} {c.name}
-              </option>
-            ))}
-          </select>
+          <CountrySelect value={country} onChange={setCountry} />
         </div>
 
         <div className="space-y-2">

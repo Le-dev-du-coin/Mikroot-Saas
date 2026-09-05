@@ -78,7 +78,7 @@ class CreateRouterView(APIView):
                 status=Router.Status.ACTIVE,
             )
 
-            # Allocation VPN séquentielle (Port API 41xxx, Port Winbox 51xxx, IP 10.8.0.x)
+            # Allocation VPN séquentielle (Port API 41xxx, Port Winbox 51xxx, IP VPN)
             vpn_cred = VpnCredential.allocate_next_credentials(router)
 
             Transaction.objects.create(
